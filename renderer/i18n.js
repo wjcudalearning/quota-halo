@@ -73,6 +73,11 @@ const DICT = {
     sOrShow: '顯示／隱藏',
     sOrWarn: '這不是 sk-or- 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 sk-or-… 貼上。',
     sLocale: '語言 Language',
+    sOverlay: '置頂層級',
+    sOverlayHigh: '最高（疊在遊戲／全螢幕上）',
+    sOverlayNormal: '一般（不蓋全螢幕）',
+    allFail: '暫時無法讀取所有供應商',
+    pillUpd: (v) => `更新 ${v.ago}`,
   },
   en: {
     titleName: 'Usage & credit',
@@ -139,6 +144,11 @@ const DICT = {
     sOrShow: 'Show/hide',
     sOrWarn: 'This does not look like an sk-or- key. Copy the sk-or-… string from openrouter.ai/keys.',
     sLocale: 'Language',
+    sOverlay: 'Always-on-top level',
+    sOverlayHigh: 'Highest (over games / fullscreen)',
+    sOverlayNormal: 'Normal (does not cover fullscreen)',
+    allFail: 'All providers are unavailable right now',
+    pillUpd: (v) => `updated ${v.ago}`,
   },
 };
 

@@ -418,7 +418,7 @@ function createNotchWindow() {
       sandbox: true,
     },
   });
-  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setAlwaysOnTop(true, settings.overlayLevel === 'normal' ? 'normal' : 'screen-saver');
   try {
     win.setShape([pillRect()]);
   } catch {
@@ -529,6 +529,7 @@ const SETTABLE = new Set([
   'refreshOnActivity',
   'notchPos',
   'locale',
+  'overlayLevel',
 ]);
 
 ipcMain.handle('settings:set', (_e, patch) => {
@@ -563,6 +564,9 @@ ipcMain.handle('settings:set', (_e, patch) => {
   }
   saveSettings(clean);
   if ('notchPos' in clean) notchPos = clean.notchPos || null;
+  if ('overlayLevel' in clean && win && !win.isDestroyed()) {
+    win.setAlwaysOnTop(true, settings.overlayLevel === 'normal' ? 'normal' : 'screen-saver');
+  }
   if ('edge' in clean || 'providers' in clean) {
     notchPos = settings.notchPos || null;
     placeWindow();

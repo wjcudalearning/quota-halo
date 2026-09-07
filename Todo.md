@@ -55,10 +55,10 @@
 ### Notch 收合狀態
 
 - [ ] 建立 Windows 版視覺語言：保留黑色 notch 概念，但加入細微邊框、半透明層次、柔和陰影／光暈與 Windows 11 Fluent 感，避免看起來像單純黑色 HTML bar。
-- [ ] 收合膠囊改成「狀態摘要」：主 provider 數值、目前最需要注意的 provider、其他 provider 狀態點，以及上次更新時間。
+- [x] 收合膠囊改成「狀態摘要」：主 provider 數值、目前最需要注意的 provider、其他 provider 狀態點，以及上次更新時間。
 - [ ] 依內容自動調整 pill 寬度；長數值、中文 provider 名稱、`SIGN IN`、`STALE` 不應被截斷成難以理解的片段。
-- [ ] 所有 provider 都失敗時增加清楚的 empty/error state，例如「暫時無法讀取」與可直接開啟設定的操作提示。
-- [ ] 把忙碌狀態、rate limit、stale、expired、needsAuth 做成一致的 badge 與動畫，不要只靠 ring 顏色。
+- [x] 所有 provider 都失敗時增加清楚的 empty/error state，例如「暫時無法讀取」與可直接開啟設定的操作提示。
+- [x] 把忙碌狀態、rate limit、stale、expired、needsAuth 做成一致的 badge 與動畫，不要只靠 ring 顏色。
 
 ### 展開卡片與詳細資訊
 
@@ -73,7 +73,7 @@
 ### 顏色、字體與 icon
 
 - [ ] 統一所有 provider 的警戒門檻與語意：例如 green／watch／critical 對應同一套 used percentage；DeepSeek 金額則另定義清楚的金額門檻。
-- [ ] 檢查橘、黃、綠在黑底上的對比度與色盲辨識；狀態不可只依賴顏色，應搭配文字、圖示或形狀。
+- [x] 檢查橘、黃、綠在黑底上的對比度與色盲辨識；狀態不可只依賴顏色，應搭配文字、圖示或形狀。
 - [x] 將 refresh、pin、settings、close 等 Unicode／emoji 改成同一套 inline SVG 或 icon font，避免不同 Windows 字型顯示成不同風格。
 - [x] 增加 hover、pressed、focus-visible、disabled 狀態；目前按鈕主要只有 hover，鍵盤操作回饋不足。
 - [x] 加入 `prefers-reduced-motion`，讓使用者可以停用旋轉 ring、pulse 與展開動畫。
@@ -102,7 +102,7 @@
 - [x] 重新設計拖曳行為：記住使用者選擇的螢幕與位置，避免每次啟動都回到 primary display 中央。
 - [ ] 評估是否支援 left／right edge；若 Windows 版只保留 top／bottom，要在 Settings 與 README 清楚說明產品取捨。
 - [ ] 實測 Windows taskbar 自動隱藏、不同 taskbar 位置、全螢幕 app、Windows snap 與多種 scaling，確認 notch 不會遮住重要內容。
-- [ ] 評估 `screen-saver` always-on-top 層級；避免 overlay 在遊戲、簡報或全螢幕工作時過度干擾，提供 auto-hide／fullscreen hide 選項。
+- [x] 評估 `screen-saver` always-on-top 層級；避免 overlay 在遊戲、簡報或全螢幕工作時過度干擾，提供 auto-hide／fullscreen hide 選項。
 - [ ] 讓 tray menu 與 notch actions 共用同一套狀態，包含 show／hide、pin、refresh、settings、quit。
 - [ ] 啟用「登入時啟動」後回讀 Windows login item 狀態；若被群組政策或系統阻擋，要在 Settings 顯示原因。
 - [ ] 補上 Windows 通知選項：token expired、provider recovered、critical quota 只在狀態真正變更時通知，避免每輪 poll 打擾。

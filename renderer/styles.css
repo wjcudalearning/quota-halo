@@ -263,6 +263,42 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 .cells.has-hover .cell { opacity: 0.45; }
 .cells.has-hover .cell:hover { opacity: 1; }
 
+/* state markers: never rely on colour alone */
+.cell[data-state="crit"] .cell-badge,
+.cell[data-state="expired"] .cell-badge,
+.cell[data-state="needsAuth"] .cell-badge {
+  animation: badgePulse 1.8s ease-in-out infinite;
+}
+.cell[data-state="needsAuth"] .cell-badge::before,
+.cell[data-state="expired"] .cell-badge::before,
+.cell[data-state="crit"] .cell-badge::before,
+.cell[data-state="rateLimited"] .cell-badge::before {
+  content: "! ";
+  font-weight: 800;
+}
+@keyframes badgePulse { 50% { opacity: 0.55; } }
+
+.mini-warn {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--orange);
+  background: rgba(255, 63, 0, 0.14);
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.dp-banner {
+  font-size: 11px;
+  color: var(--orange);
+  background: rgba(255, 63, 0, 0.1);
+  border: 1px solid rgba(255, 63, 0, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  text-align: center;
+}
+.dp-banner:hover { background: rgba(255, 63, 0, 0.18); }
+
 .drag { -webkit-app-region: drag; }
 .hidden { display: none !important; }
 

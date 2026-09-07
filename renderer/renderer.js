@@ -11,6 +11,8 @@ const titleName = $('titleName');
 const miniArc = $('miniArc');
 const miniText = $('miniText');
 const miniDots = $('miniDots');
+const miniWarn = $('miniWarn');
+const dpBanner = $('dpBanner');
 const titleSub = $('titleSub');
 const cellsEl = $('cells');
 const activityDot = $('actDot');
@@ -161,6 +163,7 @@ function ensureCell(p) {
 
 function renderCell(p) {
   const cell = ensureCell(p);
+  cell.dataset.state = p.state !== 'ok' ? p.state : (p.level || 'ok');
   const arc = cell.querySelector('.ring-arc');
   const color = stateColor(p);
   const disp = p.stale && p.staleOf ? p.staleOf : p;
@@ -323,11 +326,19 @@ function renderMini(providers) {
     d.title = `${p.name}: ${p.state === 'ok' ? p.headline : p.state}`;
     miniDots.appendChild(d);
   }
-  if (rest.length > 4) {
-    const m = document.createElement('span');
-    m.className = 'more';
-    m.textContent = `+${rest.length - 4}`;
-    miniDots.appendChild(m);
+  // Problem summary for the collapsed pill: count of non-ok providers and the
+  // most-constraining one's name, plus how long ago the readings updated.
+  const problems = providers.filter((p) => p.state !== 'ok');
+  if (problems.length) {
+    miniWarn.classList.remove('hidden');
+    miniWarn.textContent = `\u26a0${problems.length}`;
+    miniWarn.title = problems.map((p) => `${p.name}: ${p.state}`).join('\n');
+  } else {
+    miniWarn.classList.add('hidden');
+    miniWarn.textContent = '';
+  }
+  if (state.payload && state.payload.fetchedAt) {
+    mini.title = window.I18N.t('pillUpd', { ago: timeAgo(state.payload.fetchedAt) });
   }
 }
 
@@ -369,6 +380,19 @@ function render(payload) {
   }
 
   for (const p of payload.providers) renderCell(p);
+
+  // Card-level empty state: every provider is unavailable → clear message + open settings.
+  const okN = payload.providers.filter(isOkish).length;
+  const allFail = payload.providers.length > 0 && okN === 0;
+  dpBanner.classList.toggle('hidden', !allFail);
+  if (allFail) {
+    dpBanner.textContent = window.I18N.t('allFail');
+    dpBanner.title = window.I18N.t('openSettings');
+    dpBanner.onclick = () => window.codenotch.action('settings');
+  } else {
+    dpBanner.onclick = null;
+  }
+
   renderMini(payload.providers);
   renderTitle(payload);
   renderActivity(payload.activity);

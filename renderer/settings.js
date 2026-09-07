@@ -26,6 +26,7 @@ const el = {
   probe: $('probe'),
   segEdge: $('segEdge'),
   inLocale: $('inLocale'),
+  inOverlay: $('inOverlay'),
   pinned: $('inPinned'),
   seconds: $('inSeconds'),
   launch: $('inLaunch'),
@@ -138,6 +139,7 @@ async function init() {
   settings = s;
   window.I18N.setLocale(s.locale || 'zh-TW');
   el.inLocale.value = window.I18N.getLocale() === 'en' ? 'en' : 'zh-TW';
+  el.inOverlay.value = s.overlayLevel === 'normal' ? 'normal' : 'screen-saver';
   applyLocale();
   el.appVersion.textContent = 'v0.3.0';
   renderProviders();
@@ -204,6 +206,10 @@ el.inLocale.addEventListener('change', async () => {
   applyLocale();
   await apply({ locale: loc });
   flash(loc === 'en' ? 'Language set to English' : '已切換為繁體中文');
+});
+el.inOverlay.addEventListener('change', async () => {
+  await apply({ overlayLevel: el.inOverlay.value });
+  flash(el.inOverlay.value === 'normal' ? '改為一般置頂（不蓋全螢幕）' : '改為最高置頂（會蓋全螢幕）');
 });
 el.pinned.addEventListener('change', async () => {
   await apply({ pinned: el.pinned.checked });
