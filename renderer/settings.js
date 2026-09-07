@@ -28,6 +28,7 @@ const el = {
   inLocale: $('inLocale'),
   inOverlay: $('inOverlay'),
   pinned: $('inPinned'),
+  glass: $('inGlass'),
   seconds: $('inSeconds'),
   launch: $('inLaunch'),
   notify: $('inNotify'),
@@ -202,6 +203,7 @@ async function init() {
   el.keyName.value = s.keyName;
   el.seconds.value = s.refreshSeconds;
   el.pinned.checked = !!s.pinned;
+  el.glass.checked = !!s.useAcrylic;
   el.launch.checked = !!s.launchAtLogin;
   el.notify.checked = s.notifyOnStateChange !== false;
   syncEdge(s.edge);
@@ -271,6 +273,10 @@ el.inOverlay.addEventListener('change', async () => {
 el.pinned.addEventListener('change', async () => {
   await apply({ pinned: el.pinned.checked });
   flash(el.pinned.checked ? '卡片已釘住展開' : '卡片會隨滑鼠移開收起');
+});
+el.glass.addEventListener('change', async () => {
+  await apply({ useAcrylic: el.glass.checked });
+  flash(el.glass.checked ? '已開啟玻璃背景（較耗資源）' : '已改用實色卡片（較流暢）');
 });
 el.seconds.addEventListener('change', async () => {
   const v = Math.max(10, Math.min(3600, Number(el.seconds.value) || 60));

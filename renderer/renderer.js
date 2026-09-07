@@ -106,8 +106,21 @@ function isOkish(p) {
   return p.state === 'ok';
 }
 
+/** 「最緊繃」的 provider：ok 之中 fraction 最高者優先；沒有 fraction 的
+    （餘額型）視為 0；全都不 ok 時退回第一個。 */
+function tightestOf(providers) {
+  const ok = providers.filter(isOkish);
+  if (!ok.length) return providers[0];
+  return ok.reduce((a, b) => (tension(b) > tension(a) ? b : a));
+}
+function tension(p) {
+  const d = p.stale && p.staleOf ? p.staleOf : p;
+  if (d.fraction != null) return Math.max(0, Math.min(1, d.fraction));
+  if (d.headlineRaw != null) return 1 - Math.max(0, Math.min(1, d.headlineRaw));
+  return 0;
+}
 function heroOf(providers) {
-  return providers.find(isOkish) || providers[0];
+  return tightestOf(providers);
 }
 
 /* ------------------------------------------------------------ rendering -- */
@@ -130,10 +143,11 @@ function ensureCell(p) {
   cell.dataset.id = p.id;
   cell.innerHTML = `
     <div class="cell-top">
-      <svg class="ring cell-ring" width="64" height="64" viewBox="0 0 64 64">
+      <svg class="ring cell-ring" width="54" height="54" viewBox="0 0 64 64">
         <circle class="ring-track" cx="32" cy="32" r="${R.cell}" />
         <circle class="ring-arc" cx="32" cy="32" r="${R.cell}" />
       </svg>
+      <img class="cell-logo hidden" alt="" />
       <span class="cell-glyph"></span>
     </div>
     <div class="cell-headline"></div>
@@ -168,12 +182,15 @@ function renderCell(p) {
   const color = stateColor(p);
   const disp = p.stale && p.staleOf ? p.staleOf : p;
 
-  notch.style.setProperty('--ring-color', color);
+  // 每一格自己帶顏色（舊版設在 #notch 上，會讓五個環全部變成最後一個
+  // provider 的顏色）
+  cell.style.setProperty('--ring-color', color);
   setArc(arc, CIRC.cell, arcFraction(disp));
 
   const glyph = cell.querySelector('.cell-glyph');
   glyph.textContent = disp.glyph || p.id.slice(0, 2);
   glyph.style.color = p.state === 'ok' ? color : '#5a5f66';
+  applyLogo(cell, p);
 
   const headline = cell.querySelector('.cell-headline');
   headline.textContent = p.state === 'ok' || p.stale ? disp.headline : '\u2014';
@@ -186,6 +203,35 @@ function renderCell(p) {
 
   cell.querySelector('.cell-name').textContent = p.name;
   cell.querySelector('.cell-caption').textContent = p.state === 'ok' ? (disp.caption || '') : '';
+}
+
+/** provider 圖示：優先載入 SVG，再退回 PNG／ICO；全部失敗才顯示字標。 */
+function applyLogo(root, p, sel = '.cell-logo') {
+  if (!root) return;
+  const img = root.querySelector(sel);
+  if (!img) return;
+  const base = `../assets/logos/${p.id}`;
+  const sources = [`${base}.svg`, `${base}.png`, `${base}.ico`];
+  const sourceKey = sources.join('|');
+  const glyph = root.querySelector(sel === '.cell-logo' ? '.cell-glyph' : '.dp-glyph');
+  if (img.dataset.logoKey !== sourceKey) {
+    img.dataset.logoKey = sourceKey;
+    let index = 0;
+    const tryNext = () => {
+      if (index >= sources.length) {
+        img.classList.add('hidden');
+        if (glyph) glyph.classList.remove('hidden');
+        return;
+      }
+      img.src = sources[index++];
+    };
+    img.onload = () => { img.classList.remove('hidden'); if (glyph) glyph.classList.add('hidden'); };
+    img.onerror = tryNext;
+    tryNext();
+  }
+  img.dataset.provider = p.id;
+  img.style.filter = p.id === 'codex' ? 'invert(1)' : '';
+  img.style.opacity = p.state === 'ok' ? '1' : '0.5';
 }
 
 function timeAgo(iso) {
@@ -239,7 +285,11 @@ function showDetail(pick) {
     ? (pick.stale && pick.staleOf && pick.staleOf.updatedAt ? window.I18N.t('lastGood', { ago: timeAgo(pick.staleOf.updatedAt) }) : pick.message || pick.state)
     : (disp.updatedAt ? window.I18N.t('updatedAgo', { ago: timeAgo(disp.updatedAt) }) : '');
   dpPlan.style.display = dpPlan.textContent ? '' : 'none';
-  dpFid.style.setProperty('--ring-color', stateColor(pick));
+  const pc = stateColor(pick);
+  dpGlyph.style.setProperty('--ring-color', pc);
+  dpGlyph.style.setProperty('--accent', pc);
+  dpPlan.style.setProperty('--accent', pc);
+  applyLogo(dpGlyph.parentElement, pick, '.dp-logo');
 
   dpRows.textContent = '';
   const windows = Array.isArray(disp.windows) ? disp.windows : [];
@@ -264,6 +314,10 @@ function showDetail(pick) {
       const reset = document.createElement('span');
       reset.className = 'w-reset';
       reset.textContent = fmtReset(w.resetsAtMs);
+      // 玻璃版把重置時間併到數值後面（styles.css 讀 data-reset），
+      // 不再單獨佔一個 96px 欄位。
+      const rs = fmtReset(w.resetsAtMs);
+      val.dataset.reset = rs ? ' · ' + rs : '';
       row.append(label, bar, val, reset);
       dpRows.appendChild(row);
     }
@@ -310,7 +364,9 @@ function renderMini(providers) {
   const disp = hero.stale && hero.staleOf ? hero.staleOf : hero;
   const color = stateColor(hero);
   miniText.textContent = hero.state === 'ok' || hero.stale ? `${disp.headline}` : (hero.state === 'needsAuth' ? 'sign in' : 'unavailable');
-  notch.style.setProperty('--ring-color', color);
+  mini.style.setProperty('--ring-color', color);
+  mini.style.setProperty('--accent', color);
+  miniText.style.color = color;
   const frac = hero.state === 'ok' && hero.fraction != null ? hero.fraction : hero.state === 'ok' ? 1 : 0;
   setArc(miniArc, CIRC.mini, frac);
 
@@ -331,7 +387,7 @@ function renderMini(providers) {
   const problems = providers.filter((p) => p.state !== 'ok');
   if (problems.length) {
     miniWarn.classList.remove('hidden');
-    miniWarn.textContent = `\u26a0${problems.length}`;
+    miniWarn.textContent = `!${problems.length}`;
     miniWarn.title = problems.map((p) => `${p.name}: ${p.state}`).join('\n');
   } else {
     miniWarn.classList.add('hidden');
@@ -428,7 +484,34 @@ $('btnSettings').addEventListener('click', () => window.codenotch.action('settin
 window.codenotch.onSnapshot((p) => {
   popBusy('fetch');
   render(p);
+  reportHeight();
+  reportPillWidth();
 });
+
+/* 自適應高度：把卡片實際內容高度回報給主行程（main.js 會據此 setBounds）。
+   主行程若沒有實作 'height' action，這裡是無害的 no-op。 */
+let lastReported = 0;
+function reportHeight() {
+  const full = document.getElementById('full');
+  if (!full) return;
+  const h = Math.ceil(full.scrollHeight);
+  if (!h || Math.abs(h - lastReported) < 2) return;
+  lastReported = h;
+  try { window.codenotch.action('height', h); } catch (err) { /* 舊版 preload */ }
+}
+let lastReportedPillWidth = 0;
+function reportPillWidth() {
+  const width = Math.ceil(mini.getBoundingClientRect().width);
+  if (!width || Math.abs(width - lastReportedPillWidth) < 1) return;
+  lastReportedPillWidth = width;
+  try { window.codenotch.action('pill-width', width); } catch (err) { /* 舊版 preload */ }
+}
+if (window.ResizeObserver) {
+  const fullRo = new ResizeObserver(() => reportHeight());
+  fullRo.observe(document.getElementById('full'));
+  const miniRo = new ResizeObserver(() => reportPillWidth());
+  miniRo.observe(mini);
+}
 window.codenotch.onMode((mode) => {
   if (!state.pinned || mode === 'card') setMode(mode);
 });

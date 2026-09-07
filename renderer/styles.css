@@ -1,20 +1,32 @@
-/* Codenotch for Windows — multi-provider notch. Palette from the macOS
-   original (Palette.swift): black notch, #00FF88 ample, #F2FF00 watch,
-   #FF3F00 critical. */
+/* Codenotch for Windows — 玻璃質感（glass）版
+   色盤沿用 macOS 原版 Palette.swift：#00FF88 ample / #F2FF00 watch /
+   #FF3F00 critical。與舊版的差異都標了「FIX」註解。
+
+   注意：真正的桌面模糊要靠 Windows 11 的 acrylic，請在 main.js 建立
+   BrowserWindow 時加上 backgroundMaterial: 'acrylic'（見 PATCH-main.md）。
+   沒有 acrylic 時，html.no-acrylic 會退回不透明底色，版面完全相同。 */
 
 :root {
   --bg: #000000;
-  --card: #0b0d10;
-  --line: rgba(255, 255, 255, 0.07);
-  --track: #303030;
+  --card: rgba(14, 16, 19, 0.55);          /* 玻璃底 */
+  --card-solid: #0e1013;                   /* 無 acrylic 時的退回值 */
+  --line: rgba(255, 255, 255, 0.11);
+  --line-soft: rgba(255, 255, 255, 0.07);
+  --hi: rgba(255, 255, 255, 0.16);         /* 上緣高光 */
+  --sub: rgba(255, 255, 255, 0.05);        /* 內層面板 */
+  --track: rgba(255, 255, 255, 0.11);
   --text: #ffffff;
-  --dim: #808080;
+  --text-2: #c9ced4;
+  --dim: #8f969e;                          /* FIX 舊 #808080 對比不足 */
+  --dim-2: #6f757d;
   --green: #00ff88;
   --yellow: #f2ff00;
   --orange: #ff3f00;
-  --red: #ff6b4a;
+  --red: #ff8a6b;
+  --accent: var(--green);                  /* FIX 舊版從未定義 --accent */
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --shadow: 0 26px 60px rgba(0, 0, 0, 0.55);
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -28,26 +40,29 @@ html, body {
   cursor: default;
 }
 
-#root { position: relative; width: 100%; height: 240px; }
+/* FIX 舊版寫死 height:240px，內容一多就把 .cells 壓爛。改為由內容決定，
+   主行程再依 renderer 回報的高度調整視窗（PATCH-main.md）。 */
+#root { position: relative; width: 100%; height: 100%; }
 
-/* ------------------------------------------------------------ the notch -- */
-#notch {
-  position: absolute;
-  inset: 0;
-  color: var(--text);
-}
+#notch { position: absolute; inset: 0; color: var(--text); }
 
-/* collapsed pill: small black rounded bar hugging the screen edge */
+/* ------------------------------------------------------ collapsed pill --- */
+/* FIX 舊版 width:200px 寫死，環＋數字＋4 顆點＋警示徽章會被裁掉。
+   改成內容寬度 + 上下限。 */
 #mini {
   position: absolute;
   left: 50%;
   top: 0;
   transform: translateX(-50%);
-  width: 200px;
-  height: 34px;
-  border-radius: 17px;
-  background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  width: auto;
+  min-width: 96px;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 12px 0 9px;
+  border-radius: 16px;
+  background: var(--card);
+  backdrop-filter: blur(28px) saturate(1.35);
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--line), inset 0 1px 0 var(--hi);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -55,30 +70,51 @@ html, body {
   transition: opacity 0.12s ease;
   cursor: default;
 }
-.mini-inner { display: flex; align-items: center; gap: 9px; max-width: 96%; }
+.mini-inner { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
 .mini-text {
-  font-size: 14px;
+  font-family: var(--mono);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.2px;
+  letter-spacing: -0.4px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.mini-dots { display: inline-flex; gap: 4px; align-items: center; }
-.mini-dots .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+/* 分隔線 + 五段狀態條（取代舊的圓點，較好判讀） */
+.mini-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+.mini-dots .dot { width: 4px; height: 12px; border-radius: 2px; flex: none; }
 .mini-dots .more { font-size: 9px; color: var(--dim); margin-left: 1px; }
 
-/* expanded card */
+.mini-warn {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--orange);
+  white-space: nowrap;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 1px;
+  padding-left: 9px;
+  border-left: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------ expanded card ---- */
 #full {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;                        /* 高度由內容決定 */
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  backdrop-filter: blur(34px) saturate(1.35);
+  border-radius: 18px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--line), inset 0 1px 0 var(--hi);
   opacity: 0;
   pointer-events: none;
   transform: translateY(-8px) scale(0.985);
@@ -87,14 +123,16 @@ html, body {
   z-index: 1;
 }
 
+html.no-acrylic #full,
+html.no-acrylic #mini { background: var(--card-solid); backdrop-filter: none; }
+
 #notch.pill-mode #full { opacity: 0; pointer-events: none; transform: translateY(-8px) scale(0.985); }
 #notch.pill-mode #mini { opacity: 1; }
 #notch.card-mode #full { opacity: 1; pointer-events: auto; transform: none; }
 #notch.card-mode #mini { opacity: 0; pointer-events: none; }
 
-/* bottom edge flips the drawer */
 html[data-edge="bottom"] #mini { top: auto; bottom: 0; }
-html[data-edge="bottom"] #full { transform: translateY(8px) scale(0.985); transform-origin: bottom center; }
+html[data-edge="bottom"] #full { inset: auto 0 0 0; transform: translateY(8px) scale(0.985); transform-origin: bottom center; }
 html[data-edge="bottom"] #notch.pill-mode #full { transform: translateY(8px) scale(0.985); }
 html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 
@@ -104,91 +142,119 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 9px 14px 0 16px;
+  padding: 11px 11px 10px 16px;
+  box-shadow: inset 0 -1px 0 var(--line-soft);
 }
-.full-title { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.title-name { font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
-.title-sub { font-size: 10.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.full-actions { display: flex; gap: 3px; -webkit-app-region: no-drag; }
+.full-title { display: flex; align-items: baseline; gap: 9px; min-width: 0; }
+.title-name { font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+.title-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.full-actions { display: flex; gap: 2px; -webkit-app-region: no-drag; }
 
 .icon-btn {
-  width: 24px; height: 24px;
-  border: none; border-radius: 7px;
+  width: 26px; height: 26px;
+  border: none; border-radius: 8px;
   background: transparent;
   color: var(--dim);
   cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   transition: background 0.12s, color 0.12s, transform 0.08s;
 }
-.icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
-.icon-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.12); }
+.icon-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn:hover { background: rgba(255, 255, 255, 0.09); color: var(--text); }
+.icon-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.14); }
 .icon-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
 .icon-btn:disabled { opacity: 0.4; cursor: default; }
-.icon-btn.on { color: var(--green); }
+.icon-btn.on { color: var(--green); background: rgba(0, 255, 136, 0.12); }
 
 /* ------------------------------------------------------------- cells ----- */
+/* FIX 舊版是固定 88x116 的 flex item；改為等分格線，任意家數都對齊。 */
 .cells {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 2px 10px 0;
-  min-height: 0;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 4px;
+  padding: 11px 9px 9px;
 }
 
 .cell {
-  width: 88px;
-  height: 116px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 10px 0 9px;
+  border-radius: 13px;
   cursor: default;
-  transition: background 0.12s;
+  transition: background 0.12s, box-shadow 0.12s;
   -webkit-app-region: no-drag;
 }
-.cell:hover { background: rgba(255, 255, 255, 0.05); }
+.cell:hover {
+  background: var(--sub);
+  box-shadow: inset 0 0 0 1px var(--line-soft), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
 
-.cell-top { position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.cell-top { position: relative; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; }
 .cell-ring { position: absolute; inset: 0; }
-.cell-ring .ring-track { stroke-width: 5; }
-.cell-ring .ring-arc { stroke-width: 5; }
+.cell-ring .ring-track { stroke-width: 4; }
+.cell-ring .ring-arc { stroke-width: 4; }
+
+/* provider 圖示：優先使用 assets/logos/<id>.svg，亦支援 PNG／ICO fallback */
+.cell-logo { width: 24px; height: 24px; border-radius: 6px; object-fit: contain; z-index: 1; }
+.dp-logo { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex: none; }
 
 .cell-glyph {
-  font-size: 11px;
+  font-family: var(--mono);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.4px;
-  color: var(--dim);
-  opacity: 0.9;
+  letter-spacing: 0.5px;
+  color: var(--ring-color, var(--dim));
   z-index: 1;
 }
 
 .cell-headline {
-  font-size: 15.5px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-  max-width: 84px;
+  line-height: 1;
+  max-width: 100%;
+  padding: 0 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .cell-headline.dim { opacity: 0.4; }
 
+/* 非 ok 狀態才是徽章；ok 狀態的「正常／低」不再重複佔一行 */
 .cell-badge {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: var(--badge-color, var(--dim));
   line-height: 1;
 }
-.cell-name { font-size: 10.5px; color: var(--dim); line-height: 1.1; }
-.cell-caption { font-size: 9.5px; color: #6b7077; line-height: 1; }
+.cell[data-state="expired"] .cell-badge,
+.cell[data-state="needsAuth"] .cell-badge,
+.cell[data-state="error"] .cell-badge,
+.cell[data-state="rateLimited"] .cell-badge {
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: rgba(255, 63, 0, 0.16);
+}
+.cell[data-state="ok"] .cell-badge,
+.cell[data-state="low"] .cell-badge,
+.cell[data-state="crit"] .cell-badge { display: none; }
+
+.cell-name { font-size: 9.5px; color: var(--dim); line-height: 1.1; }
+.cell:hover .cell-name { color: var(--text-2); }
+.cell-caption { display: none; }   /* USD／USED 這類單位改由 headline 自帶 */
 
 .ring { display: block; }
 .ring-track { fill: none; stroke: var(--track); }
@@ -201,11 +267,14 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
   stroke-dasharray: 0 999;
   transition: stroke-dasharray 0.5s ease;
 }
+/* 沒有讀數時的虛線環，取代整圈實心灰 */
+.cell[data-state="expired"] .ring-track,
+.cell[data-state="needsAuth"] .ring-track,
+.cell[data-state="error"] .ring-track { stroke-dasharray: 3 6; }
 
-#miniRing .ring-track { stroke-width: 3; }
-#miniRing .ring-arc { stroke-width: 3; }
+#miniRing .ring-track { stroke-width: 2.6; }
+#miniRing .ring-arc { stroke-width: 2.6; }
 
-/* spinning busy arcs */
 #notch.busy .cell-ring .ring-arc,
 #mini.busy .ring-arc {
   animation: spin 1s linear infinite;
@@ -216,97 +285,117 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 /* ---------------------------------------------------------- detail panel -- */
 .detail-panel {
   flex: none;
-  margin: 2px 12px 10px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  min-height: 74px;
+  margin: 0 9px 9px;
+  padding: 11px 12px;
+  border-radius: 13px;
+  background: var(--sub);
+  box-shadow: inset 0 0 0 1px var(--line-soft), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
 }
-.dp-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.dp-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .dp-glyph {
-  font-size: 12px; font-weight: 700; color: var(--ring-color, var(--green));
-  width: 18px; text-align: center; flex: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ring-color, var(--green));
+  background: color-mix(in srgb, var(--ring-color, var(--green)) 14%, transparent);
+  padding: 4px 6px;
+  border-radius: 6px;
+  flex: none;
 }
-.dp-name { font-size: 12.5px; font-weight: 600; }
-.dp-plan { font-size: 10px; color: var(--accent, #00ff88); background: rgba(0,255,136,0.1); padding: 1px 7px; border-radius: 999px; }
-.dp-fid { font-size: 9.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.4px; }
-.dp-upd { font-size: 10px; color: var(--dim); white-space: nowrap; }
+.dp-name { font-size: 12px; font-weight: 600; }
+.dp-plan {
+  font-size: 9.5px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.dp-fid { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.dp-upd { font-family: var(--mono); font-size: 9.5px; color: var(--dim); white-space: nowrap; }
 .dp-head .spacer { flex: 1; }
 
-.dp-rows { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.dp-window { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dp-window .w-label { font-size: 10.5px; color: var(--dim); flex: none; min-width: 128px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dp-window .w-bar { flex: 1; min-width: 0; height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
+/* FIX 舊版每列預留 label 128 + val 34 + reset 96，474px 卡片裡進度條只剩
+   ~144px。改成三欄格線，label／數值收縮到內容寬，條子拿走剩下全部。 */
+.dp-rows {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px 10px;
+  align-items: center;
+  min-width: 0;
+}
+.dp-window { display: contents; }
+.dp-window .w-label { font-size: 10px; color: var(--text-2); white-space: nowrap; }
+.dp-window .w-bar { height: 5px; border-radius: 999px; background: var(--track); overflow: hidden; min-width: 0; }
 .dp-window .w-fill { height: 100%; border-radius: 999px; background: var(--bar-color, var(--green)); transition: width 0.4s ease; }
-.dp-window .w-val { font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; flex: none; text-align: right; min-width: 34px; }
-.dp-window .w-reset { font-size: 9.5px; color: var(--dim); flex: none; min-width: 96px; text-align: right; white-space: nowrap; }
+.dp-window .w-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+/* 重置時間接在數值後面同一欄，不再另開一個 96px 欄位 */
+.dp-window .w-reset { display: none; }
+.dp-window .w-val::after { content: attr(data-reset); color: var(--dim); font-weight: 400; }
 
-.dp-msg { font-size: 10.5px; color: var(--dim); }
-.dp-msg .cta { color: var(--accent, #00ff88); cursor: pointer; }
+.dp-msg { grid-column: 1 / -1; font-size: 10.5px; color: var(--text-2); }
+.dp-msg .cta { color: var(--accent); cursor: pointer; }
 .dp-msg .cta:hover { text-decoration: underline; }
 
-.dp-activity { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--dim); }
+.dp-activity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  color: var(--dim);
+  padding-top: 9px;
+  box-shadow: inset 0 1px 0 var(--line-soft);
+}
 
-.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex: none; }
-.dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
-.dot.warn { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
-.dot.bad { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+.dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.ok { background: var(--green); box-shadow: 0 0 7px var(--green); }
+.dot.warn { background: var(--yellow); box-shadow: 0 0 7px var(--yellow); }
+.dot.bad { background: var(--orange); box-shadow: 0 0 7px var(--orange); }
 .dot.idle { background: var(--dim); }
 .dot.pulse { animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.35; } }
 
-/* highlight the hovered cell, dim the rest */
-.cells.has-hover .cell { opacity: 0.45; }
+.cells.has-hover .cell { opacity: 0.5; }
 .cells.has-hover .cell:hover { opacity: 1; }
 
-/* state markers: never rely on colour alone */
+/* 狀態不只靠顏色 */
 .cell[data-state="crit"] .cell-badge,
 .cell[data-state="expired"] .cell-badge,
-.cell[data-state="needsAuth"] .cell-badge {
-  animation: badgePulse 1.8s ease-in-out infinite;
-}
+.cell[data-state="needsAuth"] .cell-badge { animation: badgePulse 1.8s ease-in-out infinite; }
 .cell[data-state="needsAuth"] .cell-badge::before,
 .cell[data-state="expired"] .cell-badge::before,
 .cell[data-state="crit"] .cell-badge::before,
-.cell[data-state="rateLimited"] .cell-badge::before {
-  content: "! ";
-  font-weight: 800;
-}
+.cell[data-state="rateLimited"] .cell-badge::before { content: "! "; font-weight: 800; }
 @keyframes badgePulse { 50% { opacity: 0.55; } }
 
-.mini-warn {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--orange);
-  background: rgba(255, 63, 0, 0.14);
-  padding: 1px 6px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
+/* 全部讀不到時的橫幅：可點，直接開設定 */
 .dp-banner {
+  grid-column: 1 / -1;
   font-size: 11px;
-  color: var(--orange);
+  color: var(--red);
   background: rgba(255, 63, 0, 0.1);
-  border: 1px solid rgba(255, 63, 0, 0.25);
-  border-radius: 8px;
-  padding: 6px 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 63, 0, 0.24);
+  border-radius: 9px;
+  padding: 7px 10px;
   text-align: center;
+  cursor: pointer;
 }
 .dp-banner:hover { background: rgba(255, 63, 0, 0.18); }
 
 .drag { -webkit-app-region: drag; }
 .hidden { display: none !important; }
 
-/* ------------------------------------------------- reduced motion -------- */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.001s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001s !important;

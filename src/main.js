@@ -14,8 +14,13 @@ const providers = require('./providers');
 // The window holds the whole card; win.setShape narrows the OS hit region to
 // the collapsed pill, so the transparent surround never blocks the desktop.
 const PILL_H = 34;
-const CARD_H = 240;
-const CELL_W = 88;   // per-provider cell width in the expanded card
+let PILL_W = 220;     // renderer 回報實際膠囊寬度後即時修正
+const PILL_W_MIN = 96;
+const PILL_W_MAX = 220;
+let CARD_H = 276;    // renderer 回報實際內容高度後即時修正
+const CARD_H_MIN = 180;
+const CARD_H_MAX = 460;
+const CELL_W = 92;   // per-provider cell width in the expanded card
 const EDGE_GAP = 6;
 
 function cardWidthFor(count) {
@@ -158,9 +163,36 @@ function rehomeOnDisplayChange() {
   placeWindow();
 }
 
+/** Throttle dynamic resize so the window doesn't jump on every poll. */
+let lastResizeAt = 0;
+function resizeOk() {
+  const now = Date.now();
+  if (now - lastResizeAt < 700) return false;
+  lastResizeAt = now;
+  return true;
+}
+
+/** Windows 11 glass is optional: acrylic on a transparent shaped window is the
+    main source of compositing jank, so it defaults off (solid card = smooth). */
+function applyGlass() {
+  if (!win || win.isDestroyed()) return;
+  try {
+    if (win.setBackgroundMaterial) win.setBackgroundMaterial(settings.useAcrylic ? 'acrylic' : 'none');
+  } catch {
+    /* runtime */
+  }
+  try {
+    win.webContents.executeJavaScript(
+      `document.documentElement.classList.toggle('no-acrylic', ${!settings.useAcrylic})`
+    ).catch(() => {});
+  } catch {
+    /* not loaded yet */
+  }
+}
+
 function pillRect() {
   const w = cardWidthFor(enabledCount());
-  const pw = Math.min(220, w - 24);
+  const pw = Math.max(PILL_W_MIN, Math.min(PILL_W_MAX, Math.min(PILL_W, w - 24)));
   const y = settings.edge === 'bottom' ? CARD_H - PILL_H : 0;
   return { x: Math.round((w - pw) / 2), y, width: pw, height: PILL_H };
 }
@@ -485,6 +517,7 @@ function createNotchWindow() {
     height: CARD_H,
     frame: false,
     transparent: true,
+    backgroundColor: '#00000000',
     resizable: false,
     movable: true,
     minimizable: false,
@@ -511,6 +544,7 @@ function createNotchWindow() {
   win.setSkipTaskbar(true);
   win.on('move', rememberPosition);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  applyGlass();
   // Right-click on the notch opens the same actions as the tray menu.
   win.webContents.on('context-menu', () => {
     try {
@@ -520,6 +554,13 @@ function createNotchWindow() {
     }
   });
   win.webContents.on('did-finish-load', () => {
+    // Acrylic only renders a real desktop blur on Windows 10/11; elsewhere (and
+    // when the user prefers smoothness over glass) fall back to the solid card.
+    if (!settings.useAcrylic) {
+      win.webContents.executeJavaScript(
+        "document.documentElement.classList.add('no-acrylic')",
+      ).catch(() => {});
+    }
     // Renderer is live; make sure it holds the current snapshot (the very
     // first poll often lands before the page finished loading).
     if (lastPayload) broadcast();
@@ -564,7 +605,7 @@ function openSettingsWindow() {
 }
 
 // ---------------------------------------------------------------- IPC -----
-ipcMain.on('ui:action', (event, action) => {
+ipcMain.on('ui:action', (event, action, arg) => {
   switch (action) {
     case 'expand':
       if (!settings.pinned) setMode('card');
@@ -585,6 +626,28 @@ ipcMain.on('ui:action', (event, action) => {
     case 'refresh':
       refreshNow();
       break;
+    case 'height': {
+      const requested = Number(arg);
+      if (!Number.isFinite(requested)) break;
+      // Dampen: snap to 24px steps and require a cooldown so the window does
+      // not micro-resize on every poll (that is what made it "pump").
+      const snap = Math.max(CARD_H_MIN, Math.min(CARD_H_MAX, Math.round(requested / 24) * 24 + 24));
+      if (snap === CARD_H || !resizeOk()) break;
+      CARD_H = snap;
+      if (currentMode === 'card') placeWindow();
+      break;
+    }
+    case 'pill-width': {
+      const requested = Number(arg);
+      if (!Number.isFinite(requested)) break;
+      const width = Math.max(PILL_W_MIN, Math.min(PILL_W_MAX, Math.round(requested / 8) * 8));
+      if (width === PILL_W || !resizeOk()) break;
+      PILL_W = width;
+      if (currentMode === 'pill' && win && !win.isDestroyed()) {
+        try { win.setShape([pillRect()]); } catch { /* older electron */ }
+      }
+      break;
+    }
     case 'settings':
       openSettingsWindow();
       break;
@@ -681,6 +744,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if ('overlayLevel' in clean && win && !win.isDestroyed()) {
     win.setAlwaysOnTop(true, settings.overlayLevel === 'normal' ? 'normal' : 'screen-saver');
   }
+  if ('useAcrylic' in clean) applyGlass();
   if ('edge' in clean || 'providers' in clean) {
     notchPos = settings.notchPos || null;
     placeWindow();
