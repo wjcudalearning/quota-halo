@@ -92,8 +92,8 @@
 
 ### 語系與文案
 
-- [ ] 建立最小 i18n 層，至少支援繁體中文與英文；目前主 notch 多為英文、設定頁為繁中，語系不一致。
-- [ ] 統一用語：Notch、provider／供應商、usage／用量、credit／餘額、refresh／重整、sign in／登入。
+- [x] 建立最小 i18n 層，至少支援繁體中文與英文；目前主 notch 多為英文、設定頁為繁中，語系不一致。
+- [x] 統一用語：Notch、provider／供應商、usage／用量、credit／餘額、refresh／重整、sign in／登入。
 - [ ] 所有錯誤訊息補上「發生什麼事」與「使用者下一步」，不要直接把檔案路徑或 HTTP 狀態當成完整 UX。
 
 ## P1 — Windows 行為與系統整合

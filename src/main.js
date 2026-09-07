@@ -193,6 +193,7 @@ function buildPayload(results, act) {
     activity: act,
     pinned: !!settings.pinned,
     edge: settings.edge,
+    locale: settings.locale,
     refreshSeconds: settings.refreshSeconds,
     fetchedAt: new Date().toISOString(),
   };
@@ -527,6 +528,7 @@ const SETTABLE = new Set([
   'openrouterApiKey',
   'refreshOnActivity',
   'notchPos',
+  'locale',
 ]);
 
 ipcMain.handle('settings:set', (_e, patch) => {

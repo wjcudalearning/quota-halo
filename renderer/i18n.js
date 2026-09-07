@@ -1,0 +1,163 @@
+'use strict';
+
+/* 最小 i18n 層：zh-TW 與 en。window.I18N.t('key', vars) 取字串，
+   window.I18N.setLocale('zh-TW'|'en') 切換。locale 由 settings 提供。 */
+
+const DICT = {
+  'zh-TW': {
+    titleName: '用量與額度',
+    titleSub: (v) => `${v.ok}/${v.total} 可讀 · 更新於 ${v.time}`,
+    // activity
+    dshWriting: 'DSH 寫入中…',
+    dshLast: (v) => `上次 DSH 活動 ${v.ago}`,
+    dshNone: '找不到 DSH sessions',
+    // badges
+    bSignIn: '登入',
+    bExpired: '過期',
+    bStale: '已過期',
+    bError: '錯誤',
+    bRate: '限流',
+    bTimeout: '逾時',
+    bTimedOut: '逾時',
+    bCrit: '危急',
+    bLow: '低',
+    bWatch: '注意',
+    bOk: '正常',
+    bToday: '今日',
+    bIdle: '閒置',
+    bFree: '免費',
+    bUnavail: '無法使用',
+    // detail panel
+    official: '官方',
+    derived: '約略計算',
+    lastGood: (v) => `最後良好 ${v.ago}`,
+    updatedAgo: (v) => `更新於 ${v.ago}`,
+    resetsIn: (v) => `重置 ${v.ago}`,
+    resetsAt: (v) => `重置 ${v.date}`,
+    resettingNow: '重置中',
+    noReading: '尚無讀值',
+    openSettings: '開啟設定',
+    // pill
+    updatedPlural: (v) => `更新 ${v.ago}`,
+    // settings window
+    sProviders: '供應商（由左到右顯示）',
+    sCredentials: '認證 Credentials',
+    sAppearance: '外觀 Appearance',
+    sPolling: '輪詢 Polling',
+    sAbout: '關於 About',
+    sOpenrouterKey: 'OpenRouter 金鑰',
+    sCredFile: 'DeepSeek 憑證檔案（YAML）',
+    sBrowse: '瀏覽…',
+    sKeyName: '該檔案內的金鑰名稱',
+    sCredHint: '預設 ~/.dsh/.credentials.yaml，預設讀取 DEEPSEEK_API_KEY。',
+    sOrHint: '存於本機 app 設定檔。也可設 OPENROUTER_API_KEY 環境變數。',
+    sOrVerify: '驗證連線',
+    sOrCreate: '到 openrouter.ai/keys 建立金鑰…',
+    sOrClear: '清除',
+    sEdge: '螢幕邊緣',
+    sEdgeTop: '上方',
+    sEdgeBottom: '下方',
+    sPin: '保持卡片展開（不需滑鼠移入）',
+    sDragHint: '直接拖曳 notch 可移到其他螢幕；位置會記住。換邊緣會回到該邊中央。',
+    sEvery: '每隔',
+    sSeconds: '秒',
+    sRefreshNow: '立即重整',
+    sLaunch: '登入時自動啟動 Codenotch',
+    sReset: '恢復預設值',
+    sClear: '清除本機設定',
+    sClearHint: '「清除本機設定」會移除設定與最後讀值快取，並回復預設；不會登出任何服務。',
+    sClose: '關閉 (Esc)',
+    sSub: 'for Windows · 設定',
+    sCredFilePh: '預設：~/.dsh/.credentials.yaml',
+    sOrPh: 'sk-or-… （否則找環境變數 OPENROUTER_API_KEY）',
+    sOrShow: '顯示／隱藏',
+    sOrWarn: '這不是 sk-or- 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 sk-or-… 貼上。',
+    sLocale: '語言 Language',
+  },
+  en: {
+    titleName: 'Usage & credit',
+    titleSub: (v) => `${v.ok}/${v.total} readable · updated ${v.time}`,
+    dshWriting: 'DSH writing now…',
+    dshLast: (v) => `last DSH activity ${v.ago}`,
+    dshNone: 'DSH sessions not found',
+    bSignIn: 'SIGN IN',
+    bExpired: 'EXPIRED',
+    bStale: 'STALE',
+    bError: 'ERROR',
+    bRate: 'RATE',
+    bTimeout: 'TIMEOUT',
+    bTimedOut: 'TIMEOUT',
+    bCrit: 'CRIT',
+    bLow: 'LOW',
+    bWatch: 'WATCH',
+    bOk: 'OK',
+    bToday: 'TODAY',
+    bIdle: 'IDLE',
+    bFree: 'FREE',
+    bUnavail: 'UNAVAIL',
+    official: 'official',
+    derived: '~ derived',
+    lastGood: (v) => `last good ${v.ago}`,
+    updatedAgo: (v) => `updated ${v.ago}`,
+    resetsIn: (v) => `resets in ${v.ago}`,
+    resetsAt: (v) => `resets ${v.date}`,
+    resettingNow: 'resetting now',
+    noReading: 'No reading yet',
+    openSettings: 'Open settings',
+    updatedPlural: (v) => `updated ${v.ago}`,
+    // settings window
+    sProviders: 'Providers (left to right)',
+    sCredentials: 'Credentials',
+    sAppearance: 'Appearance',
+    sPolling: 'Polling',
+    sAbout: 'About',
+    sOpenrouterKey: 'OpenRouter key',
+    sCredFile: 'DeepSeek credentials file (YAML)',
+    sBrowse: 'Browse…',
+    sKeyName: 'Key name inside that file',
+    sCredHint: 'Defaults to ~/.dsh/.credentials.yaml, reads DEEPSEEK_API_KEY.',
+    sOrHint: 'Stored in the app settings file on this machine. You can also set the OPENROUTER_API_KEY env var.',
+    sOrVerify: 'Verify connection',
+    sOrCreate: 'Create a key at openrouter.ai/keys…',
+    sOrClear: 'Clear',
+    sEdge: 'Screen edge',
+    sEdgeTop: 'Top',
+    sEdgeBottom: 'Bottom',
+    sPin: 'Keep the card open (no hover needed)',
+    sDragHint: 'Drag the notch to any screen; its position is remembered. Switching edge re-centres on that edge.',
+    sEvery: 'Every',
+    sSeconds: 'seconds',
+    sRefreshNow: 'Refresh now',
+    sLaunch: 'Launch Codenotch at sign-in',
+    sReset: 'Reset defaults',
+    sClear: 'Clear local settings',
+    sClearHint: 'Clearing removes settings and the last-reading cache and restores defaults; it never signs you out of anything.',
+    sClose: 'Close (Esc)',
+    sSub: 'for Windows · settings',
+    sCredFilePh: 'default: ~/.dsh/.credentials.yaml',
+    sOrPh: 'sk-or-… (or the OPENROUTER_API_KEY env var)',
+    sOrShow: 'Show/hide',
+    sOrWarn: 'This does not look like an sk-or- key. Copy the sk-or-… string from openrouter.ai/keys.',
+    sLocale: 'Language',
+  },
+};
+
+let locale = 'zh-TW';
+
+function t(key, vars) {
+  const dict = DICT[locale] || DICT['zh-TW'];
+  const entry = dict[key] != null ? dict[key] : (DICT['zh-TW'][key] != null ? DICT['zh-TW'][key] : key);
+  return typeof entry === 'function' ? entry(vars || {}) : String(entry);
+}
+
+(function expose() {
+  window.I18N = {
+    setLocale(loc) {
+      locale = loc === 'en' ? 'en' : 'zh-TW';
+    },
+    getLocale() {
+      return locale;
+    },
+    t,
+  };
+})();

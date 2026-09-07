@@ -25,6 +25,7 @@ const el = {
   keyName: $('inKeyName'),
   probe: $('probe'),
   segEdge: $('segEdge'),
+  inLocale: $('inLocale'),
   pinned: $('inPinned'),
   seconds: $('inSeconds'),
   launch: $('inLaunch'),
@@ -120,10 +121,24 @@ async function probe() {
   el.probe.innerHTML = lines.map((l) => `<div>${l}</div>`).join('');
 }
 
+function applyLocale() {
+  document.querySelectorAll('[data-i18n]').forEach((n) => {
+    n.textContent = window.I18N.t(n.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach((n) => {
+    n.placeholder = window.I18N.t(n.getAttribute('data-i18n-ph'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach((n) => {
+    n.title = window.I18N.t(n.getAttribute('data-i18n-title'));
+  });
+}
+
 async function init() {
   const s = await window.codenotch.getSettings();
   settings = s;
-  const pkg = s._width; // informational only
+  window.I18N.setLocale(s.locale || 'zh-TW');
+  el.inLocale.value = window.I18N.getLocale() === 'en' ? 'en' : 'zh-TW';
+  applyLocale();
   el.appVersion.textContent = 'v0.3.0';
   renderProviders();
   el.orKey.value = s.openrouterApiKey || '';
@@ -182,6 +197,13 @@ el.segEdge.addEventListener('click', async (e) => {
   await apply({ edge: b.dataset.edge });
   syncEdge(b.dataset.edge);
   flash(`Notch 已移到${b.dataset.edge === 'bottom' ? '下方' : '上方'}邊緣`);
+});
+el.inLocale.addEventListener('change', async () => {
+  const loc = el.inLocale.value;
+  window.I18N.setLocale(loc);
+  applyLocale();
+  await apply({ locale: loc });
+  flash(loc === 'en' ? 'Language set to English' : '已切換為繁體中文');
 });
 el.pinned.addEventListener('change', async () => {
   await apply({ pinned: el.pinned.checked });

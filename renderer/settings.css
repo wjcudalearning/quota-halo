@@ -106,6 +106,17 @@ input[type="text"], input[type="number"] {
 }
 input:focus { border-color: rgba(0, 255, 136, 0.5); }
 
+select {
+  background: #0a0d10;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12.5px;
+  padding: 6px 10px;
+  outline: none;
+}
+select:focus { border-color: rgba(0, 255, 136, 0.5); }
+
 .combo { display: flex; gap: 8px; }
 .combo input { flex: 1; }
 

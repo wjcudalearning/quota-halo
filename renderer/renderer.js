@@ -7,6 +7,7 @@ const $ = (id) => document.getElementById(id);
 
 const notch = $('notch');
 const mini = $('mini');
+const titleName = $('titleName');
 const miniArc = $('miniArc');
 const miniText = $('miniText');
 const miniDots = $('miniDots');
@@ -58,11 +59,29 @@ function stateColor(p) {
   return COLORS[p.level] || COLORS.ok;
 }
 
+const BADGE_KEY = {
+  OK: 'bOk',
+  LOW: 'bLow',
+  CRIT: 'bCrit',
+  FREE: 'bFree',
+  IDLE: 'bIdle',
+  TODAY: 'bToday',
+  UNAVAIL: 'bUnavail',
+  RATE: 'bRate',
+  TIMEOUT: 'bTimeout',
+};
+
 function badgeLabel(p) {
+  const t = (k, vars) => window.I18N.t(k, vars);
   if (p.state !== 'ok') {
-    return p.state === 'expired' ? 'EXPIRED' : p.state === 'needsAuth' ? 'SIGN IN' : p.state === 'error' ? (p.stale ? 'STALE' : 'ERROR') : p.state.toUpperCase();
+    if (p.state === 'expired') return t('bExpired');
+    if (p.state === 'needsAuth') return t('bSignIn');
+    if (p.state === 'rateLimited') return t('bRate');
+    if (p.state === 'error') return p.stale ? t('bStale') : t('bError');
+    return p.state.toUpperCase();
   }
-  return p.badge || 'OK';
+  const key = BADGE_KEY[p.badge];
+  return key ? t(key) : (p.badge || 'OK');
 }
 
 /** Ring arc fraction for this provider; null → no arc (full-dim or none). */
@@ -180,11 +199,10 @@ function fmtReset(resetsAtMs) {
   const delta = resetsAtMs - Date.now();
   const d = new Date(resetsAtMs);
   if (delta < 3600000) {
-    // under an hour → relative
-    if (delta <= 0) return 'resetting now';
-    return `resets in ${Math.ceil(delta / 60000)}m`;
+    if (delta <= 0) return window.I18N.t('resettingNow');
+    return window.I18N.t('resetsIn', { ago: `${Math.ceil(delta / 60000)}m` });
   }
-  return `resets ${d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+  return window.I18N.t('resetsAt', { date: d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) });
 }
 
 function barColor(p, kind) {
@@ -212,11 +230,11 @@ function showDetail(pick) {
   dpName.textContent = pick.name;
   dpPlan.textContent = (disp.plan && disp.plan !== 'Personal' ? disp.plan : '') || '';
   dpFid.textContent = pick.state !== 'ok'
-    ? (pick.stale ? 'stale' : pick.state)
-    : (disp.fidelity === 'official' ? 'official' : disp.fidelity === 'derived' ? '~ derived' : disp.fidelity || '');
+    ? (pick.stale ? window.I18N.t('bStale') : pick.badge ? window.I18N.t(BADGE_KEY[pick.badge] || 'bError') : pick.state)
+    : (disp.fidelity === 'official' ? window.I18N.t('official') : disp.fidelity === 'derived' ? window.I18N.t('derived') : disp.fidelity || '');
   dpUpd.textContent = pick.state !== 'ok'
-    ? (pick.stale && pick.staleOf && pick.staleOf.updatedAt ? `last good ${timeAgo(pick.staleOf.updatedAt)}` : pick.message || pick.state)
-    : (disp.updatedAt ? `updated ${timeAgo(disp.updatedAt)}` : '');
+    ? (pick.stale && pick.staleOf && pick.staleOf.updatedAt ? window.I18N.t('lastGood', { ago: timeAgo(pick.staleOf.updatedAt) }) : pick.message || pick.state)
+    : (disp.updatedAt ? window.I18N.t('updatedAgo', { ago: timeAgo(disp.updatedAt) }) : '');
   dpPlan.style.display = dpPlan.textContent ? '' : 'none';
   dpFid.style.setProperty('--ring-color', stateColor(pick));
 
@@ -266,7 +284,7 @@ function showDetail(pick) {
     if (!(disp.rows || []).length) {
       const msg = document.createElement('div');
       msg.className = 'dp-msg';
-      msg.textContent = pick.state !== 'ok' ? (pick.message || pick.state) : 'No reading yet';
+      msg.textContent = pick.state !== 'ok' ? (pick.message || pick.state) : window.I18N.t('noReading');
       dpRows.appendChild(msg);
     }
   }
@@ -275,9 +293,9 @@ function showDetail(pick) {
 function renderTitle(payload) {
   const providers = payload.providers;
   const okN = providers.filter(isOkish).length;
-  titleSub.textContent = providers.length
-    ? `${okN}/${providers.length} readable \u00b7 updated ${new Date(payload.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
-    : '';
+  titleName.textContent = window.I18N.t('titleName');
+  const time = new Date(payload.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  titleSub.textContent = providers.length ? window.I18N.t('titleSub', { ok: okN, total: providers.length, time }) : '';
 }
 
 function renderMini(providers) {
@@ -314,19 +332,21 @@ function renderMini(providers) {
 }
 
 function renderActivity(act) {
+  const t = (k, v) => window.I18N.t(k, v);
   if (!act) {
-    activityText.textContent = 'DSH sessions not found';
+    activityText.textContent = t('dshNone');
     activityDot.className = 'dot idle';
     popBusy('activity');
     return;
   }
   if (act.active) {
-    activityText.textContent = 'DSH writing now\u2026';
+    activityText.textContent = t('dshWriting');
     activityDot.className = 'dot ok pulse';
     pushBusy('activity');
   } else {
     const ago = act.lastActiveSecondsAgo;
-    activityText.textContent = `last DSH activity ${ago < 90 ? ago + 's ago' : Math.round(ago / 60) + 'm ago'}`;
+    const agoText = ago < 90 ? `${ago}s` : `${Math.round(ago / 60)}m`;
+    activityText.textContent = t('dshLast', { ago: agoText });
     activityDot.className = 'dot ok';
     popBusy('activity');
   }
@@ -334,6 +354,7 @@ function renderActivity(act) {
 
 function render(payload) {
   state.payload = payload;
+  window.I18N.setLocale(payload.locale || 'zh-TW');
   document.documentElement.dataset.edge = payload.edge || 'top';
   state.pinned = !!payload.pinned;
   btnPin.classList.toggle('on', state.pinned);

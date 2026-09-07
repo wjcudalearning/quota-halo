@@ -12,101 +12,103 @@
     <header class="titlebar drag">
       <div class="tb-title">
         <span class="tb-name">Codenotch</span>
-        <span class="tb-sub">for Windows · 設定</span>
+        <span class="tb-sub" data-i18n="sSub">for Windows · 設定</span>
       </div>
-      <button id="btnClose" class="tb-close" title="關閉 (Esc)" aria-label="關閉">
+      <button id="btnClose" class="tb-close" data-i18n-title="sClose" aria-label="關閉">
         <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </header>
 
     <main>
-      <!-- 供應商 -->
       <section>
-        <h2>供應商（由左到右顯示）</h2>
+        <h2 data-i18n="sProviders">供應商（由左到右顯示）</h2>
         <div id="providerList" class="providers"></div>
       </section>
 
-      <!-- 認證 -->
       <section>
-        <h2>認證 Credentials</h2>
+        <h2 data-i18n="sCredentials">認證 Credentials</h2>
         <div class="field">
-          <label for="inCredentials">DeepSeek 憑證檔案（YAML）</label>
+          <label for="inCredentials" data-i18n="sCredFile">DeepSeek 憑證檔案（YAML）</label>
           <div class="combo">
-            <input id="inCredentials" type="text" spellcheck="false" />
-            <button id="btnBrowse" class="btn">瀏覽…</button>
+            <input id="inCredentials" type="text" spellcheck="false" data-i18n-ph="sCredFilePh" />
+            <button id="btnBrowse" class="btn" data-i18n="sBrowse">瀏覽…</button>
           </div>
-          <p class="hint">預設 <code>~/.dsh/.credentials.yaml</code>，預設讀取 <code>DEEPSEEK_API_KEY</code>。</p>
+          <p class="hint" data-i18n="sCredHint">預設 ~/.dsh/.credentials.yaml，預設讀取 DEEPSEEK_API_KEY。</p>
         </div>
         <div class="field">
-          <label for="inKeyName">該檔案內的金鑰名稱</label>
+          <label for="inKeyName" data-i18n="sKeyName">該檔案內的金鑰名稱</label>
           <input id="inKeyName" type="text" spellcheck="false" />
         </div>
         <div class="field">
-          <label for="inORKey">OpenRouter 金鑰</label>
+          <label for="inORKey" data-i18n="sOpenrouterKey">OpenRouter 金鑰</label>
           <div class="combo">
-            <input id="inORKey" type="password" spellcheck="false" autocomplete="off"
-                   placeholder="sk-or-… （否則找環境變數 OPENROUTER_API_KEY）" />
-            <button id="btnORShow" class="btn" title="顯示／隱藏" aria-label="顯示或隱藏金鑰">👁</button>
-            <button id="btnORClear" class="btn" title="清除" aria-label="清除金鑰">清除</button>
+            <input id="inORKey" type="password" spellcheck="false" autocomplete="off" data-i18n-ph="sOrPh" />
+            <button id="btnORShow" class="btn" data-i18n-title="sOrShow" aria-label="顯示或隱藏金鑰">👁</button>
+            <button id="btnORClear" class="btn" data-i18n="sOrClear">清除</button>
           </div>
-          <p class="hint">存於本機 app 設定檔。也可設 <code>OPENROUTER_API_KEY</code> 環境變數。</p>
-          <p id="orHint" class="hint warn hidden">這不是 <code>sk-or-</code> 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 <code>sk-or-…</code> 貼上。</p>
+          <p class="hint" data-i18n="sOrHint">存於本機 app 設定檔。也可設 OPENROUTER_API_KEY 環境變數。</p>
+          <p id="orHint" class="hint warn hidden" data-i18n="sOrWarn">這不是 sk-or- 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 sk-or-… 貼上。</p>
           <div class="actions-row">
-            <button id="btnORVerify" class="btn">驗證連線</button>
-            <button id="btnORKeys" class="btn">到 openrouter.ai/keys 建立金鑰…</button>
+            <button id="btnORVerify" class="btn" data-i18n="sOrVerify">驗證連線</button>
+            <button id="btnORKeys" class="btn" data-i18n="sOrCreate">到 openrouter.ai/keys 建立金鑰…</button>
           </div>
         </div>
         <div id="probe" class="probe">檢查中…</div>
       </section>
 
-      <!-- 外觀 -->
       <section>
-        <h2>外觀 Appearance</h2>
+        <h2 data-i18n="sAppearance">外觀 Appearance</h2>
         <div class="field">
-          <label>螢幕邊緣</label>
+          <label data-i18n="sEdge">螢幕邊緣</label>
           <div class="seg" id="segEdge">
-            <button data-edge="top" class="seg-btn">上方</button>
-            <button data-edge="bottom" class="seg-btn">下方</button>
+            <button data-edge="top" class="seg-btn" data-i18n="sEdgeTop">上方</button>
+            <button data-edge="bottom" class="seg-btn" data-i18n="sEdgeBottom">下方</button>
           </div>
         </div>
-        <div class="field row-check">
-          <label class="check"><input id="inPinned" type="checkbox" /><span>保持卡片展開（不需滑鼠移入）</span></label>
-        </div>
-        <p class="hint">直接拖曳 notch 可移到其他螢幕；位置會記住。換邊緣會回到該邊中央。</p>
-      </section>
-
-      <!-- 輪詢 -->
-      <section>
-        <h2>輪詢 Polling</h2>
         <div class="field inline">
-          <label for="inSeconds">每隔</label>
-          <input id="inSeconds" type="number" min="10" max="3600" step="10" />
-          <span class="suffix">秒</span>
-          <span class="spacer"></span>
-          <button id="btnTest" class="btn">立即重整</button>
+          <label data-i18n="sLocale">語言 Language</label>
+          <select id="inLocale">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+          </select>
         </div>
         <div class="field row-check">
-          <label class="check"><input id="inLaunch" type="checkbox" /><span>登入時自動啟動 Codenotch</span></label>
+          <label class="check"><input id="inPinned" type="checkbox" /><span data-i18n="sPin">保持卡片展開（不需滑鼠移入）</span></label>
+        </div>
+        <p class="hint" data-i18n="sDragHint">直接拖曳 notch 可移到其他螢幕；位置會記住。換邊緣會回到該邊中央。</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="sPolling">輪詢 Polling</h2>
+        <div class="field inline">
+          <label for="inSeconds" data-i18n="sEvery">每隔</label>
+          <input id="inSeconds" type="number" min="10" max="3600" step="10" />
+          <span class="suffix" data-i18n="sSeconds">秒</span>
+          <span class="spacer"></span>
+          <button id="btnTest" class="btn" data-i18n="sRefreshNow">立即重整</button>
+        </div>
+        <div class="field row-check">
+          <label class="check"><input id="inLaunch" type="checkbox" /><span data-i18n="sLaunch">登入時自動啟動 Codenotch</span></label>
         </div>
       </section>
 
-      <!-- 關於 -->
       <section>
-        <h2>關於 About</h2>
+        <h2 data-i18n="sAbout">關於 About</h2>
         <div class="about-row">
           <span class="p-name">Codenotch for Windows</span>
           <span class="p-desc" id="appVersion">—</span>
         </div>
         <div class="actions-row danger">
-          <button id="btnReset" class="btn">恢復預設值</button>
-          <button id="btnClear" class="btn">清除本機設定</button>
+          <button id="btnReset" class="btn" data-i18n="sReset">恢復預設值</button>
+          <button id="btnClear" class="btn" data-i18n="sClear">清除本機設定</button>
         </div>
-        <p class="hint">「清除本機設定」會移除設定與最後讀值快取，並回復預設；不會登出任何服務。</p>
+        <p class="hint" data-i18n="sClearHint">「清除本機設定」會移除設定與最後讀值快取，並回復預設；不會登出任何服務。</p>
       </section>
     </main>
 
     <footer><span id="status" class="status">—</span></footer>
   </div>
+  <script src="i18n.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>
