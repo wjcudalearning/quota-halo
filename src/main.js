@@ -380,6 +380,14 @@ function createNotchWindow() {
   }
   win.setSkipTaskbar(true);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  // Right-click on the notch opens the same actions as the tray menu.
+  win.webContents.on('context-menu', () => {
+    try {
+      buildMenu().popup({ window: win });
+    } catch {
+      /* ignore */
+    }
+  });
   win.webContents.on('did-finish-load', () => {
     // Renderer is live; make sure it holds the current snapshot (the very
     // first poll often lands before the page finished loading).

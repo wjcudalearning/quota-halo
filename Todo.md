@@ -68,16 +68,16 @@
 - [ ] 將最受限的 window 作為 provider headline，而不是固定取第一個正常 provider；DeepSeek／OpenRouter 的金額則用 money-specific layout，不要偽裝成百分比 ring。
 - [ ] 卡片標題加入「last updated」與資料可信度（official／derived／manual）；derived 數值要明顯但不干擾閱讀地標示 `~`。
 - [ ] 為卡片加入 empty state、loading skeleton、error retry、認證操作提示，避免網路請求期間畫面只剩 dash。
-- [ ] 加入右鍵選單：Refresh、Settings、Pin、Hide temporarily、Quit；目前主要互動在 tray，notch 本身不夠完整。
+- [x] 加入右鍵選單：Refresh、Settings、Pin、Hide temporarily、Quit；目前主要互動在 tray，notch 本身不夠完整。
 
 ### 顏色、字體與 icon
 
 - [ ] 統一所有 provider 的警戒門檻與語意：例如 green／watch／critical 對應同一套 used percentage；DeepSeek 金額則另定義清楚的金額門檻。
 - [ ] 檢查橘、黃、綠在黑底上的對比度與色盲辨識；狀態不可只依賴顏色，應搭配文字、圖示或形狀。
-- [ ] 將 refresh、pin、settings、close 等 Unicode／emoji 改成同一套 inline SVG 或 icon font，避免不同 Windows 字型顯示成不同風格。
-- [ ] 增加 hover、pressed、focus-visible、disabled 狀態；目前按鈕主要只有 hover，鍵盤操作回饋不足。
-- [ ] 加入 `prefers-reduced-motion`，讓使用者可以停用旋轉 ring、pulse 與展開動畫。
-- [ ] 放大過小的輔助文字；目前不少 caption／hint 是 8–10.5px，長時間監看不易閱讀。
+- [x] 將 refresh、pin、settings、close 等 Unicode／emoji 改成同一套 inline SVG 或 icon font，避免不同 Windows 字型顯示成不同風格。
+- [x] 增加 hover、pressed、focus-visible、disabled 狀態；目前按鈕主要只有 hover，鍵盤操作回饋不足。
+- [x] 加入 `prefers-reduced-motion`，讓使用者可以停用旋轉 ring、pulse 與展開動畫。
+- [x] 放大過小的輔助文字；目前不少 caption／hint 是 8–10.5px，長時間監看不易閱讀。
 
 ### Settings 視窗
 

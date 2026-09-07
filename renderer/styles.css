@@ -57,7 +57,7 @@ html, body {
 }
 .mini-inner { display: flex; align-items: center; gap: 9px; max-width: 96%; }
 .mini-text {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2px;
   font-variant-numeric: tabular-nums;
@@ -108,7 +108,7 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 }
 .full-title { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .title-name { font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
-.title-sub { font-size: 10px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title-sub { font-size: 10.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .full-actions { display: flex; gap: 3px; -webkit-app-region: no-drag; }
 
 .icon-btn {
@@ -116,12 +116,15 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
   border: none; border-radius: 7px;
   background: transparent;
   color: var(--dim);
-  font-size: 13px; line-height: 1;
   cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.12s, color 0.12s, transform 0.08s;
 }
+.icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
+.icon-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.12); }
+.icon-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.icon-btn:disabled { opacity: 0.4; cursor: default; }
 .icon-btn.on { color: var(--green); }
 
 /* ------------------------------------------------------------- cells ----- */
@@ -178,14 +181,14 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 .cell-headline.dim { opacity: 0.4; }
 
 .cell-badge {
-  font-size: 8.5px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--badge-color, var(--dim));
   line-height: 1;
 }
-.cell-name { font-size: 10px; color: var(--dim); line-height: 1.1; }
-.cell-caption { font-size: 8px; color: #5a5f66; line-height: 1; }
+.cell-name { font-size: 10.5px; color: var(--dim); line-height: 1.1; }
+.cell-caption { font-size: 9.5px; color: #6b7077; line-height: 1; }
 
 .ring { display: block; }
 .ring-track { fill: none; stroke: var(--track); }
@@ -218,7 +221,7 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
   gap: 12px;
   padding: 5px 16px 9px;
   border-top: 1px solid var(--line);
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--dim);
   min-width: 0;
 }
@@ -243,3 +246,16 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 
 .drag { -webkit-app-region: drag; }
 .hidden { display: none !important; }
+
+/* ------------------------------------------------- reduced motion -------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+  @keyframes spin { to { transform: rotate(-90deg); } }
+  @keyframes pulse { 50% { opacity: 0.85; } }
+}
