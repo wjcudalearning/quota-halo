@@ -125,3 +125,9 @@ const out = path.join(__dirname, '..', 'assets', 'tray.png');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, png);
 console.log(`wrote ${out} (${png.length} bytes)`);
+
+// The same 256x256 drawing doubles as the app icon source (converted to .ico
+// by scripts/make-ico.ps1).
+const icon = path.join(__dirname, '..', 'assets', 'icon.png');
+fs.writeFileSync(icon, png);
+console.log(`wrote ${icon} (${png.length} bytes)`);

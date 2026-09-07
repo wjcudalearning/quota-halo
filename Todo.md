@@ -26,14 +26,14 @@
 
 ### 打包與發佈
 
-- [ ] 統一 `package.json` 的 `package`、`pack`、`dist` 三套流程。
+- [x] 統一 `package.json` 的 `package`、`pack`、`dist` 三套流程。
   - 目前 `package` 使用 `electron-packager`，但 `pack`／`dist` 使用 `electron-builder`。
   - `devDependencies` 只有 `electron-packager`，沒有 `electron-builder`，所以目前安裝環境無法直接執行 `npm run dist`。
-- [ ] 明確確認 electron-builder 的 `build.files` 是否包含 `renderer/**/*`；主程式在 `src/main.js` 會載入 `renderer/index.html` 與 `renderer/settings.html`。
-- [ ] 加入 package smoke test：打包後確認 main、renderer、settings、assets 都存在，再啟動 portable exe 驗證畫面能載入。
-- [ ] 移除 hard-coded 的 `0.2.0`，改由 `package.json` version 統一產出檔名與 app version。
-- [ ] 補上 Windows `.ico` 應用程式圖示、tray 多尺寸圖示與高 DPI 資源；目前 `build.win` 沒有指定 app icon。
-- [ ] 在 README 明確寫出唯一推薦的安裝／打包流程，避免使用者誤用不存在的 `electron-builder` 指令。
+- [x] 明確確認 electron-builder 的 `build.files` 是否包含 `renderer/**/*`；主程式在 `src/main.js` 會載入 `renderer/index.html` 與 `renderer/settings.html`。
+- [x] 加入 package smoke test：打包後確認 main、renderer、settings、assets 都存在，再啟動 portable exe 驗證畫面能載入。
+- [x] 移除 hard-coded 的 `0.2.0`，改由 `package.json` version 統一產出檔名與 app version。
+- [x] 補上 Windows `.ico` 應用程式圖示、tray 多尺寸圖示與高 DPI 資源；目前 `build.win` 沒有指定 app icon。
+- [x] 在 README 明確寫出唯一推薦的安裝／打包流程，避免使用者誤用不存在的 `electron-builder` 指令。
 
 ### Poll／刷新生命週期
 

@@ -1,38 +1,19 @@
-﻿{
+{
   "name": "codenotch-win",
-  "productName": "Codenotch for Windows",
-  "version": "0.2.0",
-  "description": "A Windows notch overlay that pins itself to the top of the screen and shows the remaining USD balance of the DeepSeek API behind DSH (a Windows port of the Codenotch concept).",
+  "productName": "Codenotch",
+  "version": "0.3.0",
+  "description": "A Windows notch overlay that pins to the top of the screen and shows the live usage / credit of the AI coding accounts on this machine (DSH DeepSeek, OpenRouter, Claude, Codex, Antigravity).",
   "main": "src/main.js",
   "author": "ported for local use",
   "license": "MIT",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . Codenotch --platform=win32 --arch=x64 --out=dist --overwrite --app-version=0.2.0 --ignore=\"^/debug\"",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --win portable"
+    "package": "node scripts/package.js",
+    "smoke": "node scripts/smoke-test.js"
   },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-packager": "^17.1.2"
-  },
-  "build": {
-    "appId": "com.local.codenotch-win",
-    "productName": "Codenotch",
-    "files": [
-      "src/**/*",
-      "assets/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        "portable"
-      ]
-    },
-    "portable": {
-      "artifactName": "Codenotch-Windows-${version}.exe"
-    }
   }
 }
-
