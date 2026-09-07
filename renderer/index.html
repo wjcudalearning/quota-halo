@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;" />
+  <title>Codenotch</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="root">
+    <div id="notch" class="pill-mode">
+      <!-- collapsed pill: draggable (drag region), expand/collapse is driven
+           by the main process cursor-watch so drag doesn't break hover -->
+      <div id="mini" class="drag">
+        <div class="mini-inner">
+          <svg id="miniRing" class="ring mini" width="20" height="20" viewBox="0 0 20 20">
+            <circle class="ring-track" cx="10" cy="10" r="8.5" />
+            <circle class="ring-arc" id="miniArc" cx="10" cy="10" r="8.5" />
+          </svg>
+          <span id="miniText" class="mini-text">—</span>
+          <span id="miniDots" class="mini-dots"></span>
+        </div>
+      </div>
+
+      <!-- expanded card -->
+      <div id="full">
+        <div class="full-header drag">
+          <div class="full-title">
+            <span class="title-name">Usage &amp; credit</span>
+            <span class="title-sub" id="titleSub">—</span>
+          </div>
+          <div class="full-actions">
+            <button id="btnRefresh" class="icon-btn" title="Refresh now">&#10227;</button>
+            <button id="btnPin" class="icon-btn" title="Pin open / hover to expand">&#128204;</button>
+            <button id="btnSettings" class="icon-btn" title="Settings">&#9881;</button>
+          </div>
+        </div>
+
+        <div class="cells" id="cells"></div>
+
+        <div class="full-footer">
+          <span class="footer-left" id="activityLine">
+            <span id="actDot" class="dot"></span>
+            <span id="activityText"></span>
+          </span>
+          <span id="detailText" class="footer-detail"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
