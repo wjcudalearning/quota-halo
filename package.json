@@ -9,8 +9,10 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "package": "node scripts/package.js",
-    "smoke": "node scripts/smoke-test.js"
+    "lint": "node scripts/check-syntax.js",
+    "package": "node scripts/check-syntax.js && node scripts/package.js",
+    "smoke": "node scripts/smoke-test.js",
+    "test": "node --test tests/core.test.js"
   },
   "devDependencies": {
     "electron": "^33.0.0",

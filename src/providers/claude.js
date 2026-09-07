@@ -186,4 +186,4 @@ async function fetchSnapshot(_settings, signal) {
   };
 }
 
-module.exports = { fetchSnapshot, id: 'claude', name: 'Claude', glyph: 'Cl' };
+module.exports = { fetchSnapshot, id: 'claude', name: 'Claude', glyph: 'Cl', fmtReset };

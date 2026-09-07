@@ -21,6 +21,7 @@ const AUTH_KEY_URL = 'https://openrouter.ai/api/v1/auth/key';
 const CREDITS_URL = 'https://openrouter.ai/api/v1/credits';
 
 function num(v) {
+  if (v == null || v === '') return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -178,4 +179,4 @@ async function fetchSnapshot(settings, signal) {
   return errResult('unrecognized response');
 }
 
-module.exports = { fetchSnapshot, id: 'openrouter', name: 'OpenRouter', glyph: 'OR', resolveKey };
+module.exports = { fetchSnapshot, id: 'openrouter', name: 'OpenRouter', glyph: 'OR', resolveKey, money, levelFor, parseAuthKey, parseCredits };

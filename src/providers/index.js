@@ -44,6 +44,22 @@ function normalize(p, r) {
   };
 }
 
+/** Keep a provider's last good reading so a transient failure shows it stale.
+    Pure function (unit-testable): returns results with staleOf/stale attached
+    for providers that are not ok but have a cached good reading. */
+function applyStale(results, cache) {
+  return results.map((r) => {
+    let item = { ...r };
+    if (item.state === 'ok') {
+      cache.set(item.id, { ...item });
+    } else {
+      const last = cache.get(item.id);
+      if (last) item = { ...item, staleOf: last, stale: true };
+    }
+    return item;
+  });
+}
+
 async function fetchAll(settings) {
   const list = enabledProviders(settings);
   const withCancellation = (p, ctrl, ms) =>
@@ -85,4 +101,4 @@ async function fetchAll(settings) {
   });
 }
 
-module.exports = { registry, enabledProviders, fetchAll, ENABLED_DEFAULTS };
+module.exports = { registry, enabledProviders, fetchAll, normalize, applyStale, ENABLED_DEFAULTS };

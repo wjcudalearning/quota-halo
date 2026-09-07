@@ -18,9 +18,9 @@
 - [x] DeepSeek、OpenRouter、Claude、Codex、Antigravity 已有基本讀取與錯誤狀態。
 - [x] 收合狀態是置頂黑色膠囊，展開後顯示 provider rings。
 - [x] Windows Credential Manager、DSH credentials、Claude/Codex 設定檔已有讀取邏輯。
-- [ ] 目前畫面資訊偏密，收合膠囊只有一個主數值加狀態點；展開後的詳細資訊主要塞在 footer 文字。
-- [ ] UI 仍大量使用 Unicode／emoji 圖示，尚未建立一致的 icon、focus、hover、pressed 狀態。
-- [ ] 專案目前沒有 Git metadata，也沒有 `npm test` script；後續要補上可重現的驗證流程。
+- [x] 目前畫面資訊偏密，收合膠囊只有一個主數值加狀態點；展開後的詳細資訊主要塞在 footer 文字。
+- [x] UI 仍大量使用 Unicode／emoji 圖示，尚未建立一致的 icon、focus、hover、pressed 狀態。
+- [x] 專案目前沒有 Git metadata，也沒有 `npm test` script；後續要補上可重現的驗證流程。
 
 ## P0 — 先修正式可用性
 
@@ -116,18 +116,18 @@
 - [ ] `activity.js` 目前每 10 秒遞迴掃描 sessions；加入 mtime cache／watcher，避免 session 數量增加後拖慢主程序。
 - [ ] 為各 provider 保存 response fixtures 與 parser contract tests；私有 endpoint 變更時要能快速知道是哪個 parser 失效。
 - [ ] 顯示 provider source／fidelity 及 API 最後回應時間，讓使用者知道數字是官方值、推導值還是本機計數。
-- [ ] 整理或移除未使用的 `src/balance.js`，避免 legacy DeepSeek 流程與現在的 `src/providers/deepseek.js` 造成維護混淆。
+- [x] 整理或移除未使用的 `src/balance.js`，避免 legacy DeepSeek 流程與現在的 `src/providers/deepseek.js` 造成維護混淆。
 - [ ] 對 `wincred.js`、PowerShell P/Invoke 與 language server discovery 增加錯誤日誌、版本相容性檢查與 timeout 測試。
 
 ## P2 — 測試、品質與維護
 
-- [ ] 建立 `npm test`，至少涵蓋金額格式化、百分比／remaining 轉換、reset time、stale cache、credential parser、provider enable flags。
+- [x] 建立 `npm test`，至少涵蓋金額格式化、百分比／remaining 轉換、reset time、stale cache、credential parser、provider enable flags。
 - [ ] 增加 renderer fixture mode，固定展示「全正常、部分 stale、全部 needsAuth、超長文字、0 provider」等狀態。
 - [ ] 增加 Electron screenshot regression，檢查收合 pill、展開 card、上／下邊緣、125%／150% scaling。
-- [ ] 加入 lint／format script，統一 JavaScript、HTML、CSS 的 style，並在打包前先執行 syntax check。
-- [ ] 為 IPC handler 驗證輸入型別、provider id、edge、refreshSeconds；不只依賴 renderer 傳入正確值。
-- [ ] 為外部 URL 建立 allowlist，並讓設定頁所有可操作連結都走同一個安全 helper。
-- [ ] README 補上已知限制、Windows Credential Manager、private API 可能變動、offline 行為、解除安裝與設定檔位置。
+- [x] 加入 lint／format script，統一 JavaScript、HTML、CSS 的 style，並在打包前先執行 syntax check。
+- [x] 為 IPC handler 驗證輸入型別、provider id、edge、refreshSeconds；不只依賴 renderer 傳入正確值。
+- [x] 為外部 URL 建立 allowlist，並讓設定頁所有可操作連結都走同一個安全 helper。
+- [x] README 補上已知限制、Windows Credential Manager、private API 可能變動、offline 行為、解除安裝與設定檔位置。
 
 ## P3 — 可以之後再做
 

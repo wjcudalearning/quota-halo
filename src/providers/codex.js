@@ -24,6 +24,12 @@ function windowLabel(windowSeconds, fallback) {
   return `${days}d limit`;
 }
 
+/** OpenRouter/Codex accounts report the *remaining* percent; the notch shows
+    used, so invert. Extracted for unit tests. */
+function usedFromRemaining(remaining) {
+  return Math.max(0, Math.min(1, (100 - Number(remaining)) / 100));
+}
+
 function readCredentials() {
   const file = AUTH_FILE();
   if (!fs.existsSync(file)) return { present: false, reason: '~/.codex/auth.json not found — sign in to Codex once' };
@@ -100,7 +106,7 @@ async function fetchSnapshot(_settings, signal) {
     // Codex's wham `used_percent` is the *remaining* percent on these accounts
     // (a 100%-used 5h window reports 0). The notch shows used, so invert.
     const remaining = Number(win.used_percent);
-    const usedFraction = Math.max(0, Math.min(1, (100 - remaining) / 100));
+    const usedFraction = usedFromRemaining(remaining);
     windows.push({
       id,
       label: windowLabel(win.limit_window_seconds, id),
@@ -139,4 +145,4 @@ async function fetchSnapshot(_settings, signal) {
   };
 }
 
-module.exports = { fetchSnapshot, id: 'codex', name: 'Codex', glyph: 'Cx' };
+module.exports = { fetchSnapshot, id: 'codex', name: 'Codex', glyph: 'Cx', windowLabel, usedFromRemaining };

@@ -172,22 +172,8 @@ function scheduleStatePersist() {
 }
 
 function buildPayload(results, act) {
-  const out = [];
-  for (const r of results) {
-    let item = { ...r };
-    if (item.state === 'ok') {
-      providerCache.set(item.id, { ...item });
-      scheduleStatePersist();
-    } else {
-      // Expired / needsAuth / error: if we ever had a good reading, keep the
-      // last numbers visible and mark them stale rather than blanking out.
-      const last = providerCache.get(item.id);
-      if (last) {
-        item = { ...item, staleOf: last, stale: true };
-      }
-    }
-    out.push(item);
-  }
+  const out = providers.applyStale(results, providerCache);
+  if (results.some((r) => r.state === 'ok')) scheduleStatePersist();
   return {
     providers: out,
     activity: act,
@@ -537,8 +523,28 @@ ipcMain.handle('settings:set', (_e, patch) => {
   for (const k of SETTABLE) {
     if (k in patch) clean[k] = patch[k];
   }
+  // Validate every settable value (never trust the renderer blindly).
   if ('refreshSeconds' in clean) {
     clean.refreshSeconds = Math.max(10, Math.min(3600, Number(clean.refreshSeconds) || 60));
+  }
+  if ('edge' in clean && !['top', 'bottom'].includes(clean.edge)) delete clean.edge;
+  if ('locale' in clean && !['zh-TW', 'en'].includes(clean.locale)) delete clean.locale;
+  if ('overlayLevel' in clean && !['screen-saver', 'normal'].includes(clean.overlayLevel)) delete clean.overlayLevel;
+  if ('keyName' in clean) clean.keyName = String(clean.keyName || 'DEEPSEEK_API_KEY').slice(0, 80);
+  if ('credentialsPath' in clean) clean.credentialsPath = String(clean.credentialsPath || '').slice(0, 1024);
+  for (const k of ['pinned', 'launchAtLogin', 'refreshOnActivity']) {
+    if (k in clean) clean[k] = !!clean[k];
+  }
+  if ('notchPos' in clean) {
+    if (clean.notchPos && typeof clean.notchPos === 'object' && Number.isFinite(clean.notchPos.x) && Number.isFinite(clean.notchPos.y)) {
+      clean.notchPos = {
+        x: Math.round(clean.notchPos.x),
+        y: Math.round(clean.notchPos.y),
+        displayId: clean.notchPos.displayId || null,
+      };
+    } else {
+      clean.notchPos = null;
+    }
   }
   if ('providers' in clean) {
     const flags = { ...(settings.providers || {}) };
@@ -666,7 +672,15 @@ ipcMain.handle('settings:pickCredentials', async () => {
   return res.canceled ? null : res.filePaths[0];
 });
 ipcMain.handle('dialog:openExternal', (_e, url) => {
-  if (typeof url === 'string' && /^https?:\/\//.test(url)) shell.openExternal(url);
+  // Allowlist: only https to hosts this app actually links to.
+  const ALLOWED = ['openrouter.ai', 'github.com', 'githubusercontent.com'];
+  if (typeof url !== 'string' || !/^https:\/\//.test(url)) return;
+  try {
+    const host = new URL(url).hostname;
+    if (ALLOWED.some((h) => host === h || host.endsWith('.' + h))) shell.openExternal(url);
+  } catch {
+    /* malformed URL */
+  }
 });
 
 // ---------------------------------------------------------------- app -----
