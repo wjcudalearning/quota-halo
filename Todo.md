@@ -44,11 +44,11 @@
 
 ### Last good reading 與資料正確性
 
-- [ ] 將 last good snapshot 持久化到 userData；重開程式後不要因冷啟動暫時連不上就顯示空白。
-- [ ] stale reading 保存原始 `updatedAt`，顯示「最後成功更新於多久前」，不要只顯示本次 fetch 失敗時間。
-- [ ] expired token 應保留上一筆數值並明確標示 expired／stale；只有真的沒有任何可信讀值時才顯示空白。
-- [ ] 建立統一的 snapshot schema：`provider`、`windows[]`、`headline`、`fidelity`、`status`、`updatedAt`，避免每個 provider 自己決定欄位語意。
-- [ ] 明確定義「used」與「remaining」；目前不同 provider 的 ring 可能代表不同方向，畫面上要標示 `USED`／`LEFT`，不可只靠顏色猜測。
+- [x] 將 last good snapshot 持久化到 userData；重開程式後不要因冷啟動暫時連不上就顯示空白。
+- [x] stale reading 保存原始 `updatedAt`，顯示「最後成功更新於多久前」，不要只顯示本次 fetch 失敗時間。
+- [x] expired token 應保留上一筆數值並明確標示 expired／stale；只有真的沒有任何可信讀值時才顯示空白。
+- [x] 建立統一的 snapshot schema：`provider`、`windows[]`、`headline`、`fidelity`、`status`、`updatedAt`，避免每個 provider 自己決定欄位語意。
+- [x] 明確定義「used」與「remaining」；目前不同 provider 的 ring 可能代表不同方向，畫面上要標示 `USED`／`LEFT`，不可只靠顏色猜測。
 
 ## P1 — UI／視覺升級
 

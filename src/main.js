@@ -102,13 +102,40 @@ function setMode(mode) {
 /** Keep a provider's last good reading so a transient failure shows it stale. */
 const providerCache = new Map();
 
+const lastStateFile = () => path.join(userData(), 'last-state.json');
+function loadLastState() {
+  try {
+    return JSON.parse(fs.readFileSync(lastStateFile(), 'utf8'));
+  } catch {
+    return {};
+  }
+}
+let lastStateWrite = null;
+function scheduleStatePersist() {
+  if (lastStateWrite) return;
+  lastStateWrite = setTimeout(() => {
+    lastStateWrite = null;
+    try {
+      const obj = {};
+      for (const [id, snap] of providerCache) obj[id] = snap;
+      fs.mkdirSync(path.dirname(lastStateFile()), { recursive: true });
+      fs.writeFileSync(lastStateFile(), JSON.stringify(obj));
+    } catch {
+      /* non-fatal */
+    }
+  }, 1500);
+}
+
 function buildPayload(results, act) {
   const out = [];
   for (const r of results) {
     let item = { ...r };
     if (item.state === 'ok') {
       providerCache.set(item.id, { ...item });
-    } else if (item.state === 'error') {
+      scheduleStatePersist();
+    } else {
+      // Expired / needsAuth / error: if we ever had a good reading, keep the
+      // last numbers visible and mark them stale rather than blanking out.
       const last = providerCache.get(item.id);
       if (last) {
         item = { ...item, staleOf: last, stale: true };
@@ -544,6 +571,10 @@ if (!gotLock) {
     reloadSettings();
     app.setName('Codenotch');
     dbg('ready: creating window');
+
+    // Seed the last-ok cache so a cold start (e.g. no network yet) still shows
+    // the most recent reading instead of a blank notch.
+    for (const [id, snap] of Object.entries(loadLastState())) providerCache.set(id, snap);
 
     createNotchWindow();
     ensureTrayIcon();

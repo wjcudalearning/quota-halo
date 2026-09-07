@@ -146,6 +146,15 @@ function renderCell(p) {
   cell.querySelector('.cell-caption').textContent = p.state === 'ok' ? (disp.caption || '') : '';
 }
 
+function timeAgo(iso) {
+  if (!iso) return '';
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
+}
+
 function showDetail() {
   const providers = state.payload ? state.payload.providers : [];
   const targetId = state.hovered;
@@ -161,8 +170,8 @@ function showDetail() {
   if (disp.tier) parts.push(disp.tier);
   if (disp.derived) parts.push('~ counted locally');
   if (pick.state !== 'ok') {
-    if (pick.stale) parts.push(`stale: ${pick.message || 'no reading'}`);
-    else parts.push(pick.message || pick.state);
+    if (pick.stale && pick.staleOf) parts.push(`stale — last good ${timeAgo(pick.staleOf.updatedAt)}`);
+    parts.push(pick.message || pick.state);
   } else {
     const rows = (disp.rows || []).slice(0, 3);
     parts.push(...rows.map((r) => `${r.k} ${r.v}`));
