@@ -106,7 +106,13 @@ function bridgeWindows(bridge) {
             });
           }
         }
-        if (out.length) return out;
+        if (out.length) {
+          // The user cares about Gemini models (the "Gemini Models" group):
+          // prefer those windows; only fall back to other groups when the
+          // Gemini group is absent.
+          const gemini = out.filter((w) => /gemini/i.test(w.group) || /gemini/i.test(w.id));
+          return gemini.length ? gemini : out;
+        }
       } else {
         lastError = res.status || (res.error && 'connect') || 0;
       }
