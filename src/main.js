@@ -396,9 +396,10 @@ function startTimers() {
     window) we never auto-expand, so grabbing the pill to move it between
     screens stays a clean drag. */
 let watchLastPt = null;
+let debugHoldCard = false;
 function watchPointer() {
   if (!win || win.isDestroyed() || !win.isVisible()) return;
-  if (settings.pinned) return;
+  if (settings.pinned || debugHoldCard) return;
   let p, b, pr;
   try {
     p = screen.getCursorScreenPoint();
@@ -969,9 +970,8 @@ async function runDebugChecks() {
       fs.writeFileSync(path.join(shotDir, 'pill.png'), pillImg.toPNG());
     }
 
-    await win.webContents.executeJavaScript(
-      `document.getElementById('mini').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))`
-    );
+    debugHoldCard = true;
+    setMode('card');
     await sleep(500);
     info.expanded = await win.webContents.executeJavaScript(`(() => ({
       className: document.getElementById('notch').className,

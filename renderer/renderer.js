@@ -230,7 +230,6 @@ function applyLogo(root, p, sel = '.cell-logo') {
     tryNext();
   }
   img.dataset.provider = p.id;
-  img.style.filter = p.id === 'codex' ? 'invert(1)' : '';
   img.style.opacity = p.state === 'ok' ? '1' : '0.5';
 }
 

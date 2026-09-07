@@ -205,8 +205,8 @@ html[data-edge="bottom"] #notch.card-mode #full { transform: none; }
 .cell-ring .ring-arc { stroke-width: 4; }
 
 /* provider 圖示：優先使用 assets/logos/<id>.svg，亦支援 PNG／ICO fallback */
-.cell-logo { width: 24px; height: 24px; border-radius: 6px; object-fit: contain; z-index: 1; }
-.dp-logo { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex: none; }
+.cell-logo { width: 24px; height: 24px; border-radius: 6px; object-fit: contain; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+.dp-logo { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
 
 .cell-glyph {
   font-family: var(--mono);
