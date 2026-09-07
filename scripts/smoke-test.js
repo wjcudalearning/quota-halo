@@ -23,6 +23,7 @@ const REQUIRED = [
   'resources/app/renderer/index.html',
   'resources/app/renderer/settings.html',
   'resources/app/renderer/renderer.js',
+  'resources/app/renderer/pill-display.js',
   'resources/app/renderer/settings.js',
   'resources/app/assets/tray.png',
   'resources/app/LICENSE',

@@ -27,6 +27,7 @@ const el = {
   segEdge: $('segEdge'),
   inLocale: $('inLocale'),
   inOverlay: $('inOverlay'),
+  pillProvider: $('inPillProvider'),
   pinned: $('inPinned'),
   glass: $('inGlass'),
   seconds: $('inSeconds'),
@@ -195,8 +196,9 @@ async function init() {
   window.I18N.setLocale(s.locale || 'zh-TW');
   el.inLocale.value = window.I18N.getLocale() === 'en' ? 'en' : 'zh-TW';
   el.inOverlay.value = s.overlayLevel === 'normal' ? 'normal' : 'screen-saver';
+  el.pillProvider.value = s.pillProvider || 'auto';
   applyLocale();
-  el.appVersion.textContent = 'v0.3.0';
+  el.appVersion.textContent = `v${s._version || '0.3.4'}`;
   el.orKey.value = s.openrouterApiKey || '';
   validateORKey();
   el.credentials.value = s.credentialsPath || '';
@@ -271,6 +273,11 @@ el.inOverlay.addEventListener('change', async () => {
   await apply({ overlayLevel: el.inOverlay.value });
   flash(el.inOverlay.value === 'normal' ? '改為一般置頂（不蓋全螢幕）' : '改為最高置頂（會蓋全螢幕）');
 });
+el.pillProvider.addEventListener('change', async () => {
+  await apply({ pillProvider: el.pillProvider.value });
+  const selected = el.pillProvider.options[el.pillProvider.selectedIndex].textContent;
+  flash(`收合顯示已改為 ${selected}`);
+});
 el.pinned.addEventListener('change', async () => {
   await apply({ pinned: el.pinned.checked });
   flash(el.pinned.checked ? '卡片已釘住展開' : '卡片會隨滑鼠移開收起');
@@ -300,20 +307,20 @@ el.test.addEventListener('click', () => {
 });
 el.reset.addEventListener('click', async () => {
   if (!confirm('確認恢復預設值？會將螢幕邊緣、輪詢、釘住、語言等回復預設（不會動憑證）。')) return;
-  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', overlayLevel: 'screen-saver', locale: 'zh-TW' });
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', overlayLevel: 'screen-saver', locale: 'zh-TW', pillProvider: 'auto' });
   settings = await window.codenotch.getSettings();
   el.orKey.value = ''; validateORKey();
   el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
-  el.inOverlay.value = 'screen-saver'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
+  el.inOverlay.value = 'screen-saver'; el.pillProvider.value = 'auto'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
   flash('已恢復預設值');
 });
 el.clear.addEventListener('click', async () => {
   if (!confirm('確認清除本機設定與最後讀值快取？此動作無法復原。')) return;
-  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', credentialsPath: '', keyName: 'DEEPSEEK_API_KEY', providers: {}, notchPos: null, overlayLevel: 'screen-saver', locale: 'zh-TW' });
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', credentialsPath: '', keyName: 'DEEPSEEK_API_KEY', providers: {}, notchPos: null, overlayLevel: 'screen-saver', locale: 'zh-TW', pillProvider: 'auto' });
   settings = await window.codenotch.getSettings();
   el.orKey.value = ''; validateORKey(); el.credentials.value = ''; el.keyName.value = 'DEEPSEEK_API_KEY';
   el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
-  el.inOverlay.value = 'screen-saver'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
+  el.inOverlay.value = 'screen-saver'; el.pillProvider.value = 'auto'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
   await refreshProbe();
   flash('已清除本機設定');
 });

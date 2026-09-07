@@ -297,6 +297,7 @@ function buildPayload(results, act) {
     edge: settings.edge,
     locale: settings.locale,
     refreshSeconds: settings.refreshSeconds,
+    pillProvider: settings.pillProvider || 'auto',
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -710,7 +711,7 @@ ipcMain.on('ui:action', (event, action, arg) => {
 
 ipcMain.handle('settings:get', () => {
   const { openrouterApiKey, openrouterApiKeyEnc, ...rest } = settings;
-  return { ...rest, _width: cardWidthFor(enabledCount()), _cardH: CARD_H };
+  return { ...rest, _width: cardWidthFor(enabledCount()), _cardH: CARD_H, _version: app.getVersion() };
 });
 
 const SETTABLE = new Set([
@@ -727,6 +728,8 @@ const SETTABLE = new Set([
   'locale',
   'overlayLevel',
   'notifyOnStateChange',
+  'pillProvider',
+  'useAcrylic',
 ]);
 
 ipcMain.handle('settings:set', (_e, patch) => {
@@ -741,9 +744,10 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if ('edge' in clean && !['top', 'bottom'].includes(clean.edge)) delete clean.edge;
   if ('locale' in clean && !['zh-TW', 'en'].includes(clean.locale)) delete clean.locale;
   if ('overlayLevel' in clean && !['screen-saver', 'normal'].includes(clean.overlayLevel)) delete clean.overlayLevel;
+  if ('pillProvider' in clean && !['auto', 'deepseek', 'openrouter', 'claude', 'codex', 'antigravity'].includes(clean.pillProvider)) delete clean.pillProvider;
   if ('keyName' in clean) clean.keyName = String(clean.keyName || 'DEEPSEEK_API_KEY').slice(0, 80);
   if ('credentialsPath' in clean) clean.credentialsPath = String(clean.credentialsPath || '').slice(0, 1024);
-  for (const k of ['pinned', 'launchAtLogin', 'refreshOnActivity', 'notifyOnStateChange']) {
+  for (const k of ['pinned', 'launchAtLogin', 'refreshOnActivity', 'notifyOnStateChange', 'useAcrylic']) {
     if (k in clean) clean[k] = !!clean[k];
   }
   if ('notchPos' in clean) {

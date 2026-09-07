@@ -12,15 +12,17 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 
 ## 下載
 
-目前版本：**v0.3.3**
+目前版本：**v0.3.4**
 
-- [下載 Quota Halo v0.3.3（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.3/Quota-Halo-v0.3.3-win-x64.zip)
+- [下載 Quota Halo v0.3.4（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.4/Quota-Halo-v0.3.4-win-x64.zip)
 - [查看所有 Releases](https://github.com/wjcudalearning/quota-halo/releases)
 
 解壓縮後執行 `Quota Halo.exe` 即可，不需要安裝。系統需求為 Windows 10/11 x64。
 
-### v0.3.3 重點
+### v0.3.4 重點
 
+- 可在設定中指定收合膠囊唯一顯示的供應商
+- DeepSeek、OpenRouter 等金額型讀值以 US$100 = 100% 繪製膠囊比例
 - OpenRouter 直接沿用 DeepSeek Harness／DSH 的 `OPENROUTER_API_KEY`
 - 修正一般 OpenRouter 金鑰可讀 credits 卻被誤判為需要 Management Key
 - Claude 圓圈顯示當前 session 剩餘比例
@@ -82,7 +84,10 @@ Claude 圓圈中央的數字代表 **當前 session 剩餘百分比**；圓環�
 - 固定卡片展開
 - 設定登入時自動啟動
 - 調整更新頻率、置頂層級、通知與介面語言
+- 指定收合膠囊顯示 DeepSeek、OpenRouter、Claude、Codex 或 Antigravity；也可保留自動模式
 - 使用認證檢查確認程式實際找到的資料來源
+
+收合膠囊固定以百分比呈現。用量型供應商沿用其主要百分比；金額型供應商以 **US$100 = 100%** 換算，例如 OpenRouter 餘額 `$19.37` 會顯示 `19%`，超過 `$100` 時封頂為 `100%`。
 
 ## 本機開發
 

@@ -17,6 +17,7 @@ function defaults() {
     overlayLevel: 'screen-saver', // 'screen-saver' | 'normal'
     notifyOnStateChange: true,   // notify on token expired / recovered / critical
     useAcrylic: false,           // Windows 11 glass; default off for smooth compositing
+    pillProvider: 'auto',        // provider id, or 'auto' for the most constrained
   };
 }
 

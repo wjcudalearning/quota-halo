@@ -11,6 +11,8 @@ const openrouter = require('../src/providers/openrouter');
 const codex = require('../src/providers/codex');
 const claude = require('../src/providers/claude');
 const providers = require('../src/providers');
+const pillDisplay = require('../renderer/pill-display');
+const settingsStore = require('../src/settingsStore');
 
 // ---- credentials YAML parser ----
 test('parseCredentialsYaml: indented keys + quoted values', () => {
@@ -120,6 +122,17 @@ test('normalize fills a uniform snapshot shape', () => {
   assert.ok(Array.isArray(n.rows));
   assert.ok(Array.isArray(n.windows));
   assert.equal(n.fidelity, 'official');
+});
+
+test('collapsed pill selects a configured provider and maps $100 to 100%', () => {
+  const list = [
+    { id: 'claude', state: 'ok', kind: 'usage', headline: '88%', fraction: 0.12 },
+    { id: 'openrouter', state: 'ok', kind: 'money', headline: '$19.37', headlineRaw: 19.37 },
+  ];
+  assert.equal(pillDisplay.choose(list, 'openrouter').id, 'openrouter');
+  assert.deepEqual(pillDisplay.metric(list[1]), { text: '19%', fraction: 0.1937 });
+  assert.deepEqual(pillDisplay.metric({ kind: 'money', headlineRaw: 140 }), { text: '100%', fraction: 1 });
+  assert.equal(settingsStore.defaults().pillProvider, 'auto');
 });
 
 // ---- YAML parser robustness (P2 114) ----

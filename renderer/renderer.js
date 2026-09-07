@@ -109,21 +109,12 @@ function isOkish(p) {
   return p.state === 'ok';
 }
 
-/** 「最緊繃」的 provider：ok 之中 fraction 最高者優先；沒有 fraction 的
-    （餘額型）視為 0；全都不 ok 時退回第一個。 */
-function tightestOf(providers) {
-  const ok = providers.filter(isOkish);
-  if (!ok.length) return providers[0];
-  return ok.reduce((a, b) => (tension(b) > tension(a) ? b : a));
-}
 function tension(p) {
-  const d = p.stale && p.staleOf ? p.staleOf : p;
-  if (d.fraction != null) return Math.max(0, Math.min(1, d.fraction));
-  if (d.headlineRaw != null) return 1 - Math.max(0, Math.min(1, d.headlineRaw));
-  return 0;
+  return window.PillDisplay.tension(p);
 }
 function heroOf(providers) {
-  return tightestOf(providers);
+  const preferred = state.payload && state.payload.pillProvider;
+  return window.PillDisplay.choose(providers, preferred);
 }
 
 /* ------------------------------------------------------------ rendering -- */
@@ -367,13 +358,13 @@ function renderMini(providers) {
     miniText.textContent = '\u2014';
     return;
   }
-  const disp = hero.stale && hero.staleOf ? hero.staleOf : hero;
+  const metric = window.PillDisplay.metric(hero);
   const color = stateColor(hero);
-  miniText.textContent = hero.state === 'ok' || hero.stale ? `${disp.headline}` : (hero.state === 'needsAuth' ? 'sign in' : 'unavailable');
+  miniText.textContent = hero.state === 'ok' || hero.stale ? metric.text : (hero.state === 'needsAuth' ? 'sign in' : 'unavailable');
   mini.style.setProperty('--ring-color', color);
   mini.style.setProperty('--accent', color);
   miniText.style.color = color;
-  const frac = hero.state === 'ok' && hero.fraction != null ? hero.fraction : hero.state === 'ok' ? 1 : 0;
+  const frac = hero.state === 'ok' ? metric.fraction : 0;
   setArc(miniArc, CIRC.mini, frac);
 
   // dots for the remaining providers
@@ -400,7 +391,7 @@ function renderMini(providers) {
     miniWarn.textContent = '';
   }
   if (state.payload && state.payload.fetchedAt) {
-    mini.title = window.I18N.t('pillUpd', { ago: timeAgo(state.payload.fetchedAt) });
+    mini.title = `${hero.name} · ${window.I18N.t('pillUpd', { ago: timeAgo(state.payload.fetchedAt) })}`;
   }
 }
 
