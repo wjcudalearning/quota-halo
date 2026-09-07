@@ -30,6 +30,7 @@ const el = {
   pinned: $('inPinned'),
   seconds: $('inSeconds'),
   launch: $('inLaunch'),
+  notify: $('inNotify'),
   test: $('btnTest'),
   reset: $('btnReset'),
   clear: $('btnClear'),
@@ -202,6 +203,7 @@ async function init() {
   el.seconds.value = s.refreshSeconds;
   el.pinned.checked = !!s.pinned;
   el.launch.checked = !!s.launchAtLogin;
+  el.notify.checked = s.notifyOnStateChange !== false;
   syncEdge(s.edge);
   await refreshProbe();
 }
@@ -280,6 +282,10 @@ el.launch.addEventListener('change', async () => {
   await apply({ launchAtLogin: el.launch.checked });
   flash(el.launch.checked ? '登入時將自動啟動' : '不再於登入時啟動');
   await refreshProbe();
+});
+el.notify.addEventListener('change', async () => {
+  await apply({ notifyOnStateChange: el.notify.checked });
+  flash(el.notify.checked ? '狀態變更時會通知' : '已關閉變更通知');
 });
 el.test.addEventListener('click', () => {
   window.codenotch.action('refresh');

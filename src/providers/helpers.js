@@ -161,6 +161,30 @@ async function runPowerShell(command, timeoutMs = 15000) {
   });
 }
 
+/** Unify the usage-window warning thresholds across providers. */
+function levelForFraction(frac) {
+  if (frac == null) return 'ok';
+  if (frac >= 0.95) return 'crit';
+  if (frac >= 0.8) return 'low';
+  return 'ok';
+}
+
+/** Unify the money-balance thresholds (DeepSeek / OpenRouter). */
+function levelForMoney(remaining) {
+  if (remaining == null) return 'ok';
+  if (remaining <= 1) return 'crit';
+  if (remaining < 5) return 'low';
+  return 'ok';
+}
+
+/** Unify the *remaining* thresholds used when a provider shows LEFT. */
+function levelForRemaining(remaining) {
+  if (remaining == null) return 'ok';
+  if (remaining <= 0.05) return 'crit';
+  if (remaining <= 0.2) return 'low';
+  return 'ok';
+}
+
 module.exports = {
   home,
   expand,
@@ -175,4 +199,7 @@ module.exports = {
   readCredentialManager,
   httpsJsonSelfSigned,
   runPowerShell,
+  levelForFraction,
+  levelForMoney,
+  levelForRemaining,
 };

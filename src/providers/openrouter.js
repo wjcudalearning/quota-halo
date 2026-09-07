@@ -14,7 +14,7 @@
  * OPENROUTER_API_KEY inside the DSH credentials file.
  */
 
-const { httpJson } = require('./helpers');
+const { httpJson, levelForMoney } = require('./helpers');
 const credentials = require('../credentials');
 
 const AUTH_KEY_URL = 'https://openrouter.ai/api/v1/auth/key';
@@ -47,10 +47,7 @@ function base() {
 }
 
 function levelFor(remaining) {
-  if (remaining == null) return 'ok';
-  if (remaining <= 1) return 'crit';
-  if (remaining < 5) return 'low';
-  return 'ok';
+  return levelForMoney(remaining);
 }
 
 function moneyResult(b, { total, used, limit, remaining, free, label }) {

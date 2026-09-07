@@ -5,7 +5,7 @@
  * reading the key DSH itself holds in ~/.dsh/.credentials.yaml.
  */
 
-const { httpJson } = require('./helpers');
+const { httpJson, levelForMoney } = require('./helpers');
 const credentials = require('../credentials');
 
 const ENDPOINT = 'https://api.deepseek.com/user/balance';
@@ -19,9 +19,7 @@ function money(n, currency) {
 }
 
 function levelFor(total) {
-  if (!Number.isFinite(total) || total <= 1) return 'crit';
-  if (total < 5) return 'low';
-  return 'ok';
+  return levelForMoney(total);
 }
 
 async function fetchSnapshot(settings, signal) {

@@ -10,7 +10,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { httpJson, parseIso } = require('./helpers');
+const { httpJson, parseIso, levelForFraction } = require('./helpers');
 
 const ENDPOINT = 'https://api.anthropic.com/api/oauth/usage';
 const CRED_FILE = () => path.join(os.homedir(), '.claude', '.credentials.json');
@@ -69,10 +69,7 @@ function base(plan) {
 }
 
 function levelFor(frac) {
-  if (frac == null) return 'ok';
-  if (frac >= 0.95) return 'crit';
-  if (frac >= 0.8) return 'low';
-  return 'ok';
+  return levelForFraction(frac);
 }
 
 function labelForKind(kind) {

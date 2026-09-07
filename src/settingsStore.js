@@ -15,6 +15,7 @@ function defaults() {
     notchPos: null,              // {x,y,displayId} remembered notch position
     locale: 'zh-TW',             // 'zh-TW' | 'en'
     overlayLevel: 'screen-saver', // 'screen-saver' | 'normal'
+    notifyOnStateChange: true,   // notify on token expired / recovered / critical
   };
 }
 

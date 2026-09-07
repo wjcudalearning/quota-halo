@@ -8,7 +8,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { httpJson, jwtClaims } = require('./helpers');
+const { httpJson, jwtClaims, levelForFraction } = require('./helpers');
 
 const ENDPOINT = 'https://chatgpt.com/backend-api/wham/usage';
 const AUTH_FILE = () => path.join(os.homedir(), '.codex', 'auth.json');
@@ -47,10 +47,7 @@ function readCredentials() {
 }
 
 function levelFor(frac) {
-  if (frac == null) return 'ok';
-  if (frac >= 0.95) return 'crit';
-  if (frac >= 0.8) return 'low';
-  return 'ok';
+  return levelForFraction(frac);
 }
 
 function fmtReset(resetAtSeconds, now) {

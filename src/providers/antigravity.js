@@ -14,7 +14,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { httpJson, parseIso, readCredentialManager, httpsJsonSelfSigned, runPowerShell } = require('./helpers');
+const { httpJson, parseIso, readCredentialManager, httpsJsonSelfSigned, runPowerShell, levelForRemaining, levelForFraction } = require('./helpers');
 
 const LOAD_URL = 'https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
 const QUOTA_URL = 'https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary';
@@ -120,13 +120,16 @@ function fmtExpiry(expiresAtMs) {
   return new Date(expiresAtMs).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-/** Count MODEL steps in each trajectory transcript (same layout as macOS). */
+/** Count MODEL steps in each trajectory transcript (same layout as macOS).
+    Per-file mtime cache so unchanged transcripts aren't re-read every poll. */
+const transcriptCache = new Map();
 function countRequestsToday() {
   const root = TRANSCRIPT_ROOT();
   let today = 0;
   let last = null;
   const startOfLocalDay = new Date();
   startOfLocalDay.setHours(0, 0, 0, 0);
+  const dayStarts = startOfLocalDay.getTime();
   if (!fs.existsSync(root)) return { today, last };
   let dirs = [];
   try {
@@ -136,12 +139,27 @@ function countRequestsToday() {
   }
   for (const d of dirs) {
     const file = path.join(root, d.name, '.system_generated', 'logs', 'transcript.jsonl');
+    let mtime;
+    try {
+      mtime = fs.statSync(file).mtimeMs;
+    } catch {
+      transcriptCache.delete(file);
+      continue;
+    }
+    const cached = transcriptCache.get(file);
+    if (cached && cached.mtime === mtime && cached.dayStarts === dayStarts) {
+      today += cached.today;
+      if (cached.last != null && (last == null || cached.last > last)) last = cached.last;
+      continue;
+    }
     let text = '';
     try {
       text = fs.readFileSync(file, 'utf8');
     } catch {
       continue;
     }
+    let t = 0;
+    let l = null;
     for (const line of text.split('\n')) {
       if (!line) continue;
       let step;
@@ -153,9 +171,12 @@ function countRequestsToday() {
       if (step.source !== 'MODEL') continue;
       const at = parseIso(step.created_at);
       if (at == null) continue;
-      if (last == null || at > last) last = at;
-      if (at >= startOfLocalDay.getTime()) today += 1;
+      if (l == null || at > l) l = at;
+      if (at >= dayStarts) t += 1;
     }
+    transcriptCache.set(file, { mtime, today: t, last: l, dayStarts });
+    today += t;
+    if (l != null && (last == null || l > last)) last = l;
   }
   return { today, last };
 }
@@ -187,7 +208,7 @@ async function fetchSnapshot(_settings, signal) {
           headline: `${Math.round(rem * 100)}%`,
           headlineRaw: rem,
           fraction: rem,
-          level: rem <= 0.05 ? 'crit' : rem <= 0.2 ? 'low' : 'ok',
+          level: levelForRemaining(rem),
           badge: rem <= 0.05 ? 'LOW' : rem <= 0.2 ? 'WATCH' : 'OK',
           caption: 'LEFT',
           rows: windows.map((w) => {
@@ -276,7 +297,7 @@ async function fetchSnapshot(_settings, signal) {
       headline: `${Math.round(frac * 100)}%`,
       headlineRaw: frac,
       fraction: frac,
-      level: frac >= 0.95 ? 'crit' : frac >= 0.8 ? 'low' : 'ok',
+      level: levelForFraction(frac),
       badge: 'OK',
       caption: 'USED',
       rows: windows.map((w) => ({ k: w.label, v: `${Math.round(w.usedFraction * 100)}% used` })),

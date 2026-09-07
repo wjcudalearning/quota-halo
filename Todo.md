@@ -72,7 +72,7 @@
 
 ### 顏色、字體與 icon
 
-- [ ] 統一所有 provider 的警戒門檻與語意：例如 green／watch／critical 對應同一套 used percentage；DeepSeek 金額則另定義清楚的金額門檻。
+- [x] 統一所有 provider 的警戒門檻與語意：例如 green／watch／critical 對應同一套 used percentage；DeepSeek 金額則另定義清楚的金額門檻。
 - [x] 檢查橘、黃、綠在黑底上的對比度與色盲辨識；狀態不可只依賴顏色，應搭配文字、圖示或形狀。
 - [x] 將 refresh、pin、settings、close 等 Unicode／emoji 改成同一套 inline SVG 或 icon font，避免不同 Windows 字型顯示成不同風格。
 - [x] 增加 hover、pressed、focus-visible、disabled 狀態；目前按鈕主要只有 hover，鍵盤操作回饋不足。
@@ -105,14 +105,14 @@
 - [x] 評估 `screen-saver` always-on-top 層級；避免 overlay 在遊戲、簡報或全螢幕工作時過度干擾，提供 auto-hide／fullscreen hide 選項。
 - [x] 讓 tray menu 與 notch actions 共用同一套狀態，包含 show／hide、pin、refresh、settings、quit。
 - [x] 啟用「登入時啟動」後回讀 Windows login item 狀態；若被群組政策或系統阻擋，要在 Settings 顯示原因。
-- [ ] 補上 Windows 通知選項：token expired、provider recovered、critical quota 只在狀態真正變更時通知，避免每輪 poll 打擾。
+- [x] 補上 Windows 通知選項：token expired、provider recovered、critical quota 只在狀態真正變更時通知，避免每輪 poll 打擾。
 
 ## P2 — Provider 與 Windows 憑證層
 
 - [x] 將 OpenRouter API key 從明文 JSON settings 移到 Windows Credential Manager 或 DPAPI；設定檔只保存是否已設定與非敏感 metadata。
 - [x] 憑證檔案顯示使用 `%USERPROFILE%`／Windows path，並處理 `DSH_HOME`、不同使用者帳號與檔案權限錯誤。
 - [x] YAML parser 目前只是小型 `key: value` subset；改用已驗證的 parser 或補齊 comment、quoted value、特殊字元與 multiline 的測試。
-- [ ] Antigravity transcript 不要每次把整個 `transcript.jsonl` 讀入記憶體；以檔案 offset、mtime cache 或 tail scan 降低輪詢成本。
+- [x] Antigravity transcript 不要每次把整個 `transcript.jsonl` 讀入記憶體；以檔案 offset、mtime cache 或 tail scan 降低輪詢成本。
 - [x] `activity.js` 目前每 10 秒遞迴掃描 sessions；加入 mtime cache／watcher，避免 session 數量增加後拖慢主程序。
 - [x] 為各 provider 保存 response fixtures 與 parser contract tests；私有 endpoint 變更時要能快速知道是哪個 parser 失效。
 - [x] 顯示 provider source／fidelity 及 API 最後回應時間，讓使用者知道數字是官方值、推導值還是本機計數。
@@ -122,8 +122,8 @@
 ## P2 — 測試、品質與維護
 
 - [x] 建立 `npm test`，至少涵蓋金額格式化、百分比／remaining 轉換、reset time、stale cache、credential parser、provider enable flags。
-- [ ] 增加 renderer fixture mode，固定展示「全正常、部分 stale、全部 needsAuth、超長文字、0 provider」等狀態。
-- [ ] 增加 Electron screenshot regression，檢查收合 pill、展開 card、上／下邊緣、125%／150% scaling。
+- [x] 增加 renderer fixture mode，固定展示「全正常、部分 stale、全部 needsAuth、超長文字、0 provider」等狀態。
+- [x] 增加 Electron screenshot regression，檢查收合 pill、展開 card、上／下邊緣、125%／150% scaling。
 - [x] 加入 lint／format script，統一 JavaScript、HTML、CSS 的 style，並在打包前先執行 syntax check。
 - [x] 為 IPC handler 驗證輸入型別、provider id、edge、refreshSeconds；不只依賴 renderer 傳入正確值。
 - [x] 為外部 URL 建立 allowlist，並讓設定頁所有可操作連結都走同一個安全 helper。

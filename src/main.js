@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, shell, safeStorage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -36,6 +36,7 @@ let pollInFlight = null;
 let consecutiveTransient = 0;
 let notchPos = null;
 let windowPlacing = false;
+let prevProviderStates = new Map();
 let isQuitting = false;
 let everBroadcast = false;
 
@@ -234,8 +235,11 @@ async function runPoll() {
     try {
       dbg('runPoll start');
       const fetchSettings = { ...settings, openrouterApiKey: decryptOpenRouterKey() };
-      const results = await providers.fetchAll(fetchSettings);
+      const results = process.env.CODENOTCH_FIXTURE
+        ? fixtureProviders()
+        : await providers.fetchAll(fetchSettings);
       dbg(`runPoll fetched ${results.length}`);
+      maybeNotify(results);
       const act = activity.sampleActivity();
       lastPayload = buildPayload(results, act);
       broadcast();
@@ -263,6 +267,58 @@ function dbg(msg) {
   } catch {
     /* ignore */
   }
+}
+
+/** Notify only when a provider actually *changes* state (never every poll). */
+function maybeNotify(results) {
+  if (settings.notifyOnStateChange === false) return;
+  for (const r of results) {
+    const prev = prevProviderStates.get(r.id);
+    const cur = r.state;
+    if (prev && prev !== cur && Notification.isSupported()) {
+      const bad = cur !== 'ok';
+      const title = bad ? `${r.name} 狀態變更` : `${r.name} 已恢復`;
+      const body = bad ? (r.message || r.state) : `讀取已恢復：${r.headline || ''}`;
+      try {
+        new Notification({ title, body, silent: true }).show();
+      } catch {
+        /* suppress */
+      }
+    }
+    prevProviderStates.set(r.id, cur);
+  }
+}
+
+/** Renderer fixture mode (CODENOTCH_FIXTURE=ok|stale|auth|empty) for design /
+    screenshot work without touching the providers. */
+function fixtureProviders() {
+  const mode = (process.env.CODENOTCH_FIXTURE || 'ok').toLowerCase();
+  const base = [
+    { id: 'deepseek', name: 'DeepSeek', glyph: 'D', kind: 'money' },
+    { id: 'openrouter', name: 'OpenRouter', glyph: 'OR', kind: 'money' },
+    { id: 'claude', name: 'Claude', glyph: 'Cl', kind: 'usage' },
+    { id: 'codex', name: 'Codex', glyph: 'Cx', kind: 'usage' },
+    { id: 'antigravity', name: 'Antigravity', glyph: 'Ag', kind: 'usage' },
+  ];
+  const ok = (p) => ({
+    ...p,
+    state: 'ok',
+    fidelity: 'official',
+    headline: p.kind === 'money' ? '$30.00' : '12%',
+    headlineRaw: null,
+    fraction: p.kind === 'money' ? null : 0.12,
+    level: 'ok',
+    badge: 'OK',
+    caption: p.kind === 'money' ? 'USD' : 'USED',
+    rows: [{ k: 'reading', v: '100%' }],
+    windows: [],
+    updatedAt: new Date().toISOString(),
+  });
+  let out = base.map(ok);
+  if (mode === 'auth') out = out.map((p) => ({ ...p, state: 'needsAuth', headline: '\u2014', badge: 'AUTH', rows: [{ k: 'SIGN IN', v: '' }] }));
+  else if (mode === 'empty') out = [];
+  else if (mode === 'stale') out = out.map((p) => ({ ...p, state: 'error', headline: '\u2014', badge: 'ERR', stale: true, staleOf: ok(p) }));
+  return out;
 }
 
 function broadcast() {
@@ -561,6 +617,7 @@ const SETTABLE = new Set([
   'notchPos',
   'locale',
   'overlayLevel',
+  'notifyOnStateChange',
 ]);
 
 ipcMain.handle('settings:set', (_e, patch) => {
@@ -577,7 +634,7 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if ('overlayLevel' in clean && !['screen-saver', 'normal'].includes(clean.overlayLevel)) delete clean.overlayLevel;
   if ('keyName' in clean) clean.keyName = String(clean.keyName || 'DEEPSEEK_API_KEY').slice(0, 80);
   if ('credentialsPath' in clean) clean.credentialsPath = String(clean.credentialsPath || '').slice(0, 1024);
-  for (const k of ['pinned', 'launchAtLogin', 'refreshOnActivity']) {
+  for (const k of ['pinned', 'launchAtLogin', 'refreshOnActivity', 'notifyOnStateChange']) {
     if (k in clean) clean[k] = !!clean[k];
   }
   if ('notchPos' in clean) {
@@ -838,6 +895,16 @@ async function runDebugChecks() {
       };
     })()`);
     info.bounds = win.getBounds();
+
+    // Screenshot regression route: CODENOTCH_SHOT=1 saves collapsed pill and
+    // expanded card under screenshots/ (pill.png, card.png).
+    const shotDir = path.join(__dirname, '..', 'screenshots');
+    if (process.env.CODENOTCH_SHOT) {
+      const pillImg = await win.webContents.capturePage();
+      fs.mkdirSync(shotDir, { recursive: true });
+      fs.writeFileSync(path.join(shotDir, 'pill.png'), pillImg.toPNG());
+    }
+
     await win.webContents.executeJavaScript(
       `document.getElementById('mini').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))`
     );
@@ -848,6 +915,9 @@ async function runDebugChecks() {
     }))()`);
     const img = await win.webContents.capturePage();
     fs.writeFileSync(path.join(outDir, 'notch.png'), img.toPNG());
+    if (process.env.CODENOTCH_SHOT) {
+      fs.writeFileSync(path.join(shotDir, 'card.png'), img.toPNG());
+    }
     fs.writeFileSync(path.join(outDir, 'report.json'), JSON.stringify(info, null, 2));
     console.log('[debug] report written');
     setTimeout(() => quitApp(), 400);
