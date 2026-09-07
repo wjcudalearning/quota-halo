@@ -16,6 +16,9 @@ const el = {
   providerList: $('providerList'),
   orKey: $('inORKey'),
   orKeysBtn: $('btnORKeys'),
+  orShow: $('btnORShow'),
+  orClear: $('btnORClear'),
+  orVerify: $('btnORVerify'),
   orHint: $('orHint'),
   credentials: $('inCredentials'),
   browse: $('btnBrowse'),
@@ -26,6 +29,9 @@ const el = {
   seconds: $('inSeconds'),
   launch: $('inLaunch'),
   test: $('btnTest'),
+  reset: $('btnReset'),
+  clear: $('btnClear'),
+  appVersion: $('appVersion'),
   status: $('status'),
   close: $('btnClose'),
 };
@@ -46,6 +52,7 @@ function flash(msg) {
 async function apply(patch) {
   await window.codenotch.setSettings(patch);
   settings = { ...settings, ...patch };
+  showLastFour();
 }
 
 function renderProviders() {
@@ -76,6 +83,31 @@ function renderProviders() {
   }
 }
 
+function lastFour(key) {
+  if (!key || !key.startsWith('sk-or-')) return '';
+  return '…' + key.slice(-4);
+}
+function showLastFour() {
+  const hint = lastFour(el.orKey.value.trim());
+  el.orVerify.textContent = hint ? `驗證連線（${hint}）` : '驗證連線';
+}
+
+function validateORKey() {
+  const v = el.orKey.value.trim();
+  el.orHint.classList.toggle('hidden', !v || v.startsWith('sk-or-'));
+  showLastFour();
+}
+
+function saveORKey(instant) {
+  clearTimeout(orDebounce);
+  const doSave = async () => {
+    await apply({ openrouterApiKey: el.orKey.value.trim() || '' });
+    flash('OpenRouter 金鑰已存到本機設定');
+  };
+  if (instant) doSave();
+  else orDebounce = setTimeout(doSave, 350);
+}
+
 async function probe() {
   const res = await window.codenotch.probeCredentials();
   const lines = [];
@@ -91,6 +123,8 @@ async function probe() {
 async function init() {
   const s = await window.codenotch.getSettings();
   settings = s;
+  const pkg = s._width; // informational only
+  el.appVersion.textContent = 'v0.3.0';
   renderProviders();
   el.orKey.value = s.openrouterApiKey || '';
   validateORKey();
@@ -110,24 +144,22 @@ function syncEdge(edge) {
   }
 }
 
-function validateORKey() {
-  const v = el.orKey.value.trim();
-  el.orHint.classList.toggle('hidden', !v || v.startsWith('sk-or-'));
-}
-
-function saveORKey(instant) {
-  clearTimeout(orDebounce);
-  const doSave = async () => {
-    await apply({ openrouterApiKey: el.orKey.value.trim() || '' });
-    flash('OpenRouter 金鑰已存到本機設定');
-  };
-  if (instant) doSave();
-  else orDebounce = setTimeout(doSave, 350);
-}
-
 el.orKey.addEventListener('input', () => { validateORKey(); saveORKey(false); });
 el.orKey.addEventListener('change', () => { validateORKey(); saveORKey(true); });
+el.orVerify.addEventListener('click', () => { window.codenotch.action('refresh'); flash('正在驗證 OpenRouter 連線…'); });
 el.orKeysBtn.addEventListener('click', () => window.codenotch.openExternal('https://openrouter.ai/keys'));
+el.orShow.addEventListener('click', () => {
+  const t = el.orKey.type === 'password' ? 'text' : 'password';
+  el.orKey.type = t;
+  el.orShow.classList.toggle('on', t === 'text');
+  el.orShow.title = t === 'text' ? '隱藏金鑰' : '顯示金鑰';
+});
+el.orClear.addEventListener('click', async () => {
+  el.orKey.value = '';
+  validateORKey();
+  await apply({ openrouterApiKey: '' });
+  flash('OpenRouter 金鑰已清除');
+});
 el.credentials.addEventListener('change', async () => {
   await apply({ credentialsPath: el.credentials.value.trim() });
   flash('憑證路徑已更新');
@@ -169,9 +201,34 @@ el.test.addEventListener('click', () => {
   window.codenotch.action('refresh');
   flash('正在重整所有供應商…');
 });
+el.reset.addEventListener('click', async () => {
+  if (!confirm('確認恢復預設值？會將螢幕邊緣、輪詢、釘住、語言等回復預設（不會動憑證）。')) return;
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '' });
+  settings = await window.codenotch.getSettings();
+  el.orKey.value = ''; validateORKey();
+  el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
+  flash('已恢復預設值');
+});
+el.clear.addEventListener('click', async () => {
+  if (!confirm('確認清除本機設定與最後讀值快取？此動作無法復原。')) return;
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', credentialsPath: '', keyName: 'DEEPSEEK_API_KEY', providers: {}, notchPos: null });
+  settings = await window.codenotch.getSettings();
+  el.orKey.value = ''; validateORKey(); el.credentials.value = ''; el.keyName.value = 'DEEPSEEK_API_KEY';
+  el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
+  renderProviders();
+  flash('已清除本機設定');
+});
 el.close.addEventListener('click', () => {
   saveORKey(true);
   window.codenotch.action('close-settings');
+});
+
+// Esc closes the settings window.
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    saveORKey(true);
+    window.codenotch.action('close-settings');
+  }
 });
 
 init();

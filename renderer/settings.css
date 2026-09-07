@@ -138,6 +138,17 @@ input:focus { border-color: rgba(0, 255, 136, 0.5); }
 .check { display: inline-flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text); cursor: pointer; }
 .check input { accent-color: var(--accent); width: 14px; height: 14px; }
 
+.actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions-row.danger { margin-top: 10px; }
+
+.about-row {
+  display: flex; align-items: baseline; gap: 10px;
+}
+.about-row .p-name { font-weight: 600; }
+.about-row .p-desc { font-size: 12px; color: var(--accent); }
+
+.btn.on { color: var(--accent); border-color: rgba(0, 255, 136, 0.4); }
+
 /* providers */
 .providers { display: flex; flex-direction: column; gap: 7px; }
 .provider-row {

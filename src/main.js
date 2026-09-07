@@ -34,6 +34,8 @@ let pointerTimer = null;
 let currentMode = 'pill';
 let pollInFlight = null;
 let consecutiveTransient = 0;
+let notchPos = null;
+let windowPlacing = false;
 let isQuitting = false;
 let everBroadcast = false;
 
@@ -68,7 +70,50 @@ function placeWindow() {
   } else {
     y = wa.y + EDGE_GAP;
   }
-  win.setBounds({ x, y, width: w, height: CARD_H });
+  // Respect a position the user dragged the notch to (and its display still
+  // exists); otherwise fall back to the centred default above.
+  let target = { x, y, width: w, height: CARD_H };
+  if (notchPos && typeof notchPos.x === 'number' && typeof notchPos.y === 'number') {
+    const d = screen.getDisplayNearestPoint({ x: notchPos.x, y: notchPos.y });
+    if (d && screen.getAllDisplays().some((dd) => dd.id === (notchPos.displayId ?? d.id))) {
+      target = { x: notchPos.x, y: notchPos.y, width: w, height: CARD_H };
+    } else {
+      notchPos = null;
+      saveSettings({ notchPos: null });
+    }
+  }
+  windowPlacing = true;
+  try {
+    win.setBounds(target);
+  } finally {
+    windowPlacing = false;
+  }
+}
+
+let moveSaveTimer = null;
+function rememberPosition() {
+  if (windowPlacing || !win || win.isDestroyed()) return;
+  clearTimeout(moveSaveTimer);
+  moveSaveTimer = setTimeout(() => {
+    const b = win.getBounds();
+    const d = screen.getDisplayNearestPoint({ x: b.x, y: b.y });
+    notchPos = { x: b.x, y: b.y, displayId: d ? d.id : null };
+    saveSettings({ notchPos });
+  }, 600);
+}
+
+function rehomeOnDisplayChange() {
+  if (!win || win.isDestroyed()) return;
+  if (!notchPos || notchPos.displayId == null) {
+    placeWindow();
+    return;
+  }
+  const stillThere = screen.getAllDisplays().some((dd) => dd.id === notchPos.displayId);
+  if (!stillThere) {
+    notchPos = null;
+    saveSettings({ notchPos: null });
+  }
+  placeWindow();
 }
 
 function pillRect() {
@@ -379,6 +424,7 @@ function createNotchWindow() {
     /* older electron */
   }
   win.setSkipTaskbar(true);
+  win.on('move', rememberPosition);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   // Right-click on the notch opens the same actions as the tray menu.
   win.webContents.on('context-menu', () => {
@@ -480,6 +526,7 @@ const SETTABLE = new Set([
   'providers',
   'openrouterApiKey',
   'refreshOnActivity',
+  'notchPos',
 ]);
 
 ipcMain.handle('settings:set', (_e, patch) => {
@@ -509,8 +556,13 @@ ipcMain.handle('settings:set', (_e, patch) => {
   if ('launchAtLogin' in clean) {
     app.setLoginItemSettings({ openAtLogin: !!clean.launchAtLogin });
   }
+  if ('edge' in clean) {
+    clean.notchPos = null; // switching screen edge re-centres; user re-drags
+  }
   saveSettings(clean);
+  if ('notchPos' in clean) notchPos = clean.notchPos || null;
   if ('edge' in clean || 'providers' in clean) {
+    notchPos = settings.notchPos || null;
     placeWindow();
     try {
       win.setShape(settings.pinned ? [cardRect()] : [pillRect()]);
@@ -578,6 +630,7 @@ if (!gotLock) {
     settingsFile = settingsPath();
     reloadSettings();
     app.setName('Codenotch');
+    notchPos = settings.notchPos || null;
     dbg('ready: creating window');
 
     // Seed the last-ok cache so a cold start (e.g. no network yet) still shows
@@ -596,6 +649,11 @@ if (!gotLock) {
 
     const storedLogin = app.getLoginItemSettings && app.getLoginItemSettings().openAtLogin;
     if (storedLogin) settings.launchAtLogin = true;
+
+    // Re-home the notch if a display that held it was added/removed/resized.
+    screen.on('display-added', rehomeOnDisplayChange);
+    screen.on('display-removed', rehomeOnDisplayChange);
+    screen.on('display-metrics-changed', rehomeOnDisplayChange);
 
     startTimers();
     dbg('timers started');

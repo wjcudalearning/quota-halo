@@ -12,6 +12,8 @@ function defaults() {
     credentialsPath: '',         // '' → default (~/.dsh/.credentials.yaml)
     pinned: false,               // card pinned open instead of hover-expand
     launchAtLogin: false,
+    notchPos: null,              // {x,y,displayId} remembered notch position
+    locale: 'zh-TW',             // 'zh-TW' | 'en'
   };
 }
 
