@@ -160,7 +160,7 @@ function countRequestsToday() {
   return { today, last };
 }
 
-async function fetchSnapshot() {
+async function fetchSnapshot(_settings, signal) {
   const b = { id: 'antigravity', name: 'Antigravity', glyph: 'Ag', kind: 'usage', fidelity: 'derived', fraction: null };
 
   // 1. Antigravity's own language server first: it holds the client identity
@@ -218,6 +218,7 @@ async function fetchSnapshot() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token.accessToken}` },
       body: JSON.stringify({ metadata: { pluginType: 'GEMINI' } }),
+      signal,
     });
     if (t.status === 200 && t.json) {
       tier = (t.json.currentTier && t.json.currentTier.name) ||
@@ -235,6 +236,7 @@ async function fetchSnapshot() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token.accessToken}` },
       body: '{}',
+      signal,
     });
     if (q.status === 200 && q.json) {
       const groups = (q.json.quotaGroups || []).concat(q.json.groups || []);

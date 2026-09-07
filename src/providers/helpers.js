@@ -51,22 +51,24 @@ function jwtClaims(token) {
   }
 }
 
-/** Timeout-aware fetch returning { status, body(text), headers } or throwing {kind}. */
-async function http(url, { method = 'GET', headers = {}, body, timeoutMs = 15000 } = {}) {
+/** Timeout-aware fetch returning { status, body(text), headers } or throwing {kind}.
+    Accepts an external AbortSignal so a caller can cancel an in-flight request. */
+async function http(url, { method = 'GET', headers = {}, body, timeoutMs = 15000, signal } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const signals = signal ? AbortSignal.any([controller.signal, signal]) : controller.signal;
   try {
     const res = await fetch(url, {
       method,
       headers: { Accept: 'application/json', ...headers },
       body,
-      signal: controller.signal,
+      signal: signals,
     });
     const text = await res.text();
     return { status: res.status, body: text, headers: res.headers };
   } catch (err) {
     const aborted = err && (err.name === 'AbortError' || err.code === 'ABORT_ERR');
-    throw new Error(aborted ? 'timed out' : String((err && err.message) || err));
+    throw new Error(aborted ? 'cancelled' : String((err && err.message) || err));
   } finally {
     clearTimeout(timer);
   }
@@ -78,7 +80,6 @@ async function httpJson(url, opts = {}) {
   const json = tryParse(res.body);
   return { status: res.status, json, raw: res.body };
 }
-
 /** Retry-After header: seconds or http-date -> seconds, or null. */
 function retryAfterSeconds(headers) {
   const value = headers && headers.get ? headers.get('retry-after') : null;

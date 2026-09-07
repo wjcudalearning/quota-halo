@@ -54,7 +54,7 @@ function fmtReset(resetAtSeconds, now) {
   return d.toLocaleString([], { weekday: days >= 1 ? 'short' : undefined, hour: '2-digit', minute: '2-digit' });
 }
 
-async function fetchSnapshot() {
+async function fetchSnapshot(_settings, signal) {
   const cred = readCredentials();
   const b = { id: 'codex', name: 'Codex', glyph: 'Cx', kind: 'usage', fidelity: 'official', fraction: null };
   if (!cred.present) {
@@ -74,6 +74,7 @@ async function fetchSnapshot() {
         'ChatGPT-Account-Id': cred.accountId,
         'Cache-Control': 'no-cache, no-store',
       },
+      signal,
     });
   } catch (err) {
     return { ...b, state: 'error', headline: '\u2014', badge: 'ERR', rows: [{ k: 'Fetch failed', v: String((err && err.message) || err) }], message: `Couldn\u2019t read Codex usage \u2014 ${String((err && err.message) || err)}` };

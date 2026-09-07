@@ -37,10 +37,10 @@
 
 ### Poll／刷新生命週期
 
-- [ ] 在 `runPoll()` 增加 single-flight 保護，避免手動 Refresh、計時器與啟動初次刷新同時打 API。
-- [ ] provider timeout 目前用 `Promise.race`，超時後原本的 provider promise 仍可能繼續執行；改用可取消的 `AbortController` 或 provider-level cancellation。
-- [ ] 為各 provider 加上 `Retry-After`、429 backoff、網路離線與恢復策略，避免 API 暫時失敗時固定頻率重試。
-- [ ] refresh 失敗時，在畫面上區分「離線」、「認證失效」、「API rate limit」、「資料格式變更」與一般錯誤。
+- [x] 在 `runPoll()` 增加 single-flight 保護，避免手動 Refresh、計時器與啟動初次刷新同時打 API。
+- [x] provider timeout 目前用 `Promise.race`，超時後原本的 provider promise 仍可能繼續執行；改用可取消的 `AbortController` 或 provider-level cancellation。
+- [x] 為各 provider 加上 `Retry-After`、429 backoff、網路離線與恢復策略，避免 API 暫時失敗時固定頻率重試。
+- [x] refresh 失敗時，在畫面上區分「離線」、「認證失效」、「API rate limit」、「資料格式變更」與一般錯誤。
 
 ### Last good reading 與資料正確性
 

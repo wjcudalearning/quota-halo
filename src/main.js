@@ -32,6 +32,8 @@ let pollTimer = null;
 let activityTimer = null;
 let pointerTimer = null;
 let currentMode = 'pill';
+let pollInFlight = null;
+let consecutiveTransient = 0;
 let isQuitting = false;
 let everBroadcast = false;
 
@@ -125,14 +127,30 @@ function buildPayload(results, act) {
 }
 
 async function runPoll() {
-  dbg('runPoll start');
-  const results = await providers.fetchAll(settings);
-  dbg(`runPoll fetched ${results.length}`);
-  const act = activity.sampleActivity();
-  lastPayload = buildPayload(results, act);
-  broadcast();
-  updateTray();
-  dbg('runPoll broadcast done');
+  // Single-flight: a manual Refresh while a poll is in flight just waits on the
+  // same promise instead of firing a second set of API calls.
+  if (pollInFlight) return pollInFlight;
+  pollInFlight = (async () => {
+    try {
+      dbg('runPoll start');
+      const results = await providers.fetchAll(settings);
+      dbg(`runPoll fetched ${results.length}`);
+      const act = activity.sampleActivity();
+      lastPayload = buildPayload(results, act);
+      broadcast();
+      updateTray();
+      // Track transient API failures so the scheduler can back off rather than
+      // hammering a temporarily-unreachable endpoint at a fixed cadence.
+      const hasTransient = results.some(
+        (r) => r.state === 'error' || r.badge === 'RATE' || r.badge === 'TIMEOUT' || r.state === 'rateLimited'
+      );
+      consecutiveTransient = hasTransient ? consecutiveTransient + 1 : 0;
+      dbg('runPoll done transient=' + consecutiveTransient);
+    } finally {
+      pollInFlight = null;
+    }
+  })();
+  return pollInFlight;
 }
 
 function dbg(msg) {
@@ -160,8 +178,14 @@ function broadcast() {
 function schedulePoll() {
   if (pollTimer) clearTimeout(pollTimer);
   const activeNow = !!(lastPayload && lastPayload.activity && lastPayload.activity.active);
-  const delayMs = activeNow ? 10000 : Math.max(10, (settings.refreshSeconds || 60) * 1000);
-  pollTimer = setTimeout(() => runPoll().finally(schedulePoll), delayMs);
+  const base = activeNow ? 10000 : Math.max(10, (settings.refreshSeconds || 60) * 1000);
+  let delay = base;
+  // On repeated transient failures back off exponentially (15s→30s→60s→120s),
+  // capped at the normal cadence, resuming immediately once a poll succeeds.
+  if (consecutiveTransient > 0 && !activeNow) {
+    delay = Math.min(base, 15000 * Math.pow(2, Math.min(consecutiveTransient - 1, 3)));
+  }
+  pollTimer = setTimeout(() => runPoll().finally(schedulePoll), delay);
 }
 
 function startTimers() {

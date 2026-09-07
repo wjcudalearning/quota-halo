@@ -24,7 +24,7 @@ function levelFor(total) {
   return 'ok';
 }
 
-async function fetchSnapshot(settings) {
+async function fetchSnapshot(settings, signal) {
   const cred = credentials.readApiKey(settings);
   if (!cred.present) {
     const reason =
@@ -55,6 +55,7 @@ async function fetchSnapshot(settings) {
   try {
     res = await httpJson(ENDPOINT, {
       headers: { Authorization: `Bearer ${cred.key}` },
+      signal,
     });
   } catch (err) {
     return errResult(String((err && err.message) || err));

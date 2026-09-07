@@ -127,7 +127,7 @@ function errResult(detail) {
   return { ...base(), state: 'error', headline: '\u2014', badge: 'ERR', rows: [{ k: 'Fetch failed', v: detail }], message: `Couldn\u2019t read OpenRouter credits \u2014 ${detail}` };
 }
 
-async function fetchSnapshot(settings) {
+async function fetchSnapshot(settings, signal) {
   const b = base();
   const key = resolveKey(settings);
   if (!key) {
@@ -148,7 +148,7 @@ async function fetchSnapshot(settings) {
   // 1) account info (label, free tier, per-key limit) — informational.
   let account = null;
   try {
-    const a = await httpJson(AUTH_KEY_URL, { headers: { Authorization: `Bearer ${key}` } });
+    const a = await httpJson(AUTH_KEY_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
     if (a.status === 401 || a.status === 403) {
       return { ...b, state: 'needsAuth', headline: '\u2014', badge: 'AUTH', rows: [{ k: 'Key rejected', v: `HTTP ${a.status}` }], message: `OpenRouter rejected the key (HTTP ${a.status})`, hint: 'Check the key in Settings' };
     }
@@ -162,7 +162,7 @@ async function fetchSnapshot(settings) {
 
   // 2) credits — the money figure.
   try {
-    const c = await httpJson(CREDITS_URL, { headers: { Authorization: `Bearer ${key}` } });
+    const c = await httpJson(CREDITS_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
     if (c.status === 401 || c.status === 403) {
       return { ...b, state: 'needsAuth', headline: '\u2014', badge: 'AUTH', rows: [{ k: 'Key rejected', v: `HTTP ${c.status}` }], message: `OpenRouter rejected the key (HTTP ${c.status})`, hint: 'Check the key in Settings' };
     }

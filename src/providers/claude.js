@@ -79,7 +79,7 @@ function labelForKind(kind) {
   return KIND_LABELS[kind] || (kind || '').replace(/weekly_/g, '').replace(/_/g, ' ') || kind;
 }
 
-async function fetchSnapshot() {
+async function fetchSnapshot(_settings, signal) {
   const cred = readCredentials();
   const b = base(cred.plan);
   if (!cred.present) {
@@ -116,6 +116,7 @@ async function fetchSnapshot() {
         Authorization: `Bearer ${cred.accessToken}`,
         'anthropic-beta': 'oauth-2025-04-20',
       },
+      signal,
     });
   } catch (err) {
     return { ...b, state: 'error', headline: '\u2014', badge: 'ERR', rows: [{ k: 'Fetch failed', v: String((err && err.message) || err) }], message: `Couldn\u2019t read Claude usage \u2014 ${String((err && err.message) || err)}` };

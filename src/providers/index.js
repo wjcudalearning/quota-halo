@@ -19,37 +19,50 @@ function enabledProviders(settings) {
 
 async function fetchAll(settings) {
   const list = enabledProviders(settings);
-  const withTimeout = (p, ms) =>
-    Promise.race([
-      Promise.resolve().then(() => p.fetchSnapshot(settings)),
-      new Promise((resolve) => setTimeout(() => resolve({ __timeout: true }), ms)),
-    ]);
-  const settled = await Promise.allSettled(list.map((p) => withTimeout(p, 22000)));
+  const withCancellation = (p, ctrl, ms) =>
+    new Promise((resolve) => {
+      let done = false;
+      const finish = (v) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(v);
+      };
+      const timer = setTimeout(() => {
+        ctrl.abort(); // genuinely cancel the in-flight request
+        finish({ __timeout: true });
+      }, ms);
+      Promise.resolve()
+        .then(() => p.fetchSnapshot(settings, ctrl.signal))
+        .then((v) => finish(v))
+        .catch((err) => finish({ __error: err }));
+    });
+  const settled = await Promise.all(list.map((p) => withCancellation(p, new AbortController(), 22000)));
   return list.map((p, i) => {
     const s = settled[i];
-    if (s.status === 'fulfilled') {
-      if (s.value && s.value.__timeout) {
-        return {
-          id: p.id, name: p.name, glyph: p.glyph, kind: 'usage',
-          state: 'error', headline: '\u2014', fraction: null, badge: 'TIMEOUT',
-          rows: [{ k: 'Provider timed out', v: 'no answer in 22s' }],
-          message: 'No answer within 22s',
-        };
-      }
-      return s.value;
+    if (s && s.__timeout) {
+      return {
+        id: p.id, name: p.name, glyph: p.glyph, kind: 'usage',
+        state: 'error', headline: '\u2014', fraction: null, badge: 'TIMEOUT',
+        rows: [{ k: 'Provider timed out', v: 'no answer in 22s' }],
+        message: 'No answer within 22s',
+      };
     }
-    return {
-      id: p.id,
-      name: p.name,
-      glyph: p.glyph,
-      kind: 'usage',
-      state: 'error',
-      headline: '\u2014',
-      fraction: null,
-      badge: 'ERR',
-      rows: [{ k: 'Provider crashed', v: String((s.reason && s.reason.message) || s.reason) }],
-      message: String((s.reason && s.reason.message) || s.reason),
-    };
+    if (s && s.__error) {
+      return {
+        id: p.id,
+        name: p.name,
+        glyph: p.glyph,
+        kind: 'usage',
+        state: 'error',
+        headline: '\u2014',
+        fraction: null,
+        badge: 'ERR',
+        rows: [{ k: 'Provider crashed', v: String((s.__error && s.__error.message) || s.__error) }],
+        message: String((s.__error && s.__error.message) || s.__error),
+      };
+    }
+    return s;
   });
 }
 
