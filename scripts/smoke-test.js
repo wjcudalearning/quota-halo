@@ -25,6 +25,7 @@ const REQUIRED = [
   'resources/app/renderer/renderer.js',
   'resources/app/renderer/settings.js',
   'resources/app/assets/tray.png',
+  'resources/app/LICENSE',
   'resources/app/package.json',
 ];
 

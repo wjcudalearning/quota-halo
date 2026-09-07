@@ -12,12 +12,20 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 
 ## 下載
 
-目前版本：**v0.3.2**
+目前版本：**v0.3.3**
 
-- [下載 Quota Halo v0.3.2（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.2/Quota-Halo-v0.3.2-win-x64.zip)
+- [下載 Quota Halo v0.3.3（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.3/Quota-Halo-v0.3.3-win-x64.zip)
 - [查看所有 Releases](https://github.com/wjcudalearning/quota-halo/releases)
 
 解壓縮後執行 `Quota Halo.exe` 即可，不需要安裝。系統需求為 Windows 10/11 x64。
+
+### v0.3.3 重點
+
+- OpenRouter 直接沿用 DeepSeek Harness／DSH 的 `OPENROUTER_API_KEY`
+- 修正一般 OpenRouter 金鑰可讀 credits 卻被誤判為需要 Management Key
+- Claude 圓圈顯示當前 session 剩餘比例
+- 全新 Quota Halo Logo、系統匣與 EXE 圖示
+- 補齊 MIT License 與原始 Codenotch 著作權聲明
 
 ## 功能特色
 
@@ -121,4 +129,6 @@ dist/Quota Halo-win32-x64/Quota Halo.exe
 
 ## 授權
 
-MIT（詳見 `package.json`）。
+Quota Halo 採用 [MIT License](LICENSE)。你可以自由使用、修改、散布與再授權，但必須在軟體副本或主要部分中保留版權與 MIT 授權聲明。
+
+本專案由 MIT 授權的 [Codenotch](https://github.com/vinzdg/codenotch) 概念與程式延伸；原始著作權 `Copyright (c) 2026 Vinz` 已保留在 `LICENSE`，Quota Halo 的 Windows 修改部分署名為 `Copyright (c) 2026 wjcudalearning`。
