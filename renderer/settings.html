@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:;" />
-  <title>Codenotch — 設定</title>
+  <title>Quota Halo — 設定</title>
   <link rel="stylesheet" href="settings.css" />
 </head>
 <body>
   <div class="win">
     <header class="titlebar drag">
       <div class="tb-title">
-        <span class="tb-name">Codenotch</span>
+        <span class="tb-name">Quota Halo</span>
         <span class="tb-sub" data-i18n="sSub">for Windows · 設定</span>
       </div>
       <button id="btnClose" class="tb-close" data-i18n-title="sClose" aria-label="關閉">
@@ -40,17 +40,17 @@
           <input id="inKeyName" type="text" spellcheck="false" />
         </div>
         <div class="field">
-          <label for="inORKey" data-i18n="sOpenrouterKey">OpenRouter 金鑰</label>
+          <label for="inORKey" data-i18n="sOpenrouterKey">OpenRouter Management API 金鑰</label>
           <div class="combo">
             <input id="inORKey" type="password" spellcheck="false" autocomplete="off" data-i18n-ph="sOrPh" />
             <button id="btnORShow" class="btn" data-i18n-title="sOrShow" aria-label="顯示或隱藏金鑰">👁</button>
             <button id="btnORClear" class="btn" data-i18n="sOrClear">清除</button>
           </div>
-          <p class="hint" data-i18n="sOrHint">存於本機 app 設定檔。也可設 OPENROUTER_API_KEY 環境變數。</p>
+          <p class="hint" data-i18n="sOrHint">要讀帳號餘額，請使用 Management API 金鑰；一般 inference 金鑰只能讀自己的限額。金鑰存於本機 app 設定檔，也可設 OPENROUTER_API_KEY 環境變數。</p>
           <p id="orHint" class="hint warn hidden" data-i18n="sOrWarn">這不是 sk-or- 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 sk-or-… 貼上。</p>
           <div class="actions-row">
             <button id="btnORVerify" class="btn" data-i18n="sOrVerify">驗證連線</button>
-            <button id="btnORKeys" class="btn" data-i18n="sOrCreate">到 openrouter.ai/keys 建立金鑰…</button>
+            <button id="btnORKeys" class="btn" data-i18n="sOrCreate">到 OpenRouter 建立管理金鑰…</button>
           </div>
         </div>
         <div id="probe" class="probe">檢查中…</div>
@@ -98,7 +98,7 @@
           <button id="btnTest" class="btn" data-i18n="sRefreshNow">立即重整</button>
         </div>
         <div class="field row-check">
-          <label class="check"><input id="inLaunch" type="checkbox" /><span data-i18n="sLaunch">登入時自動啟動 Codenotch</span></label>
+          <label class="check"><input id="inLaunch" type="checkbox" /><span data-i18n="sLaunch">登入時自動啟動 Quota Halo</span></label>
         </div>
         <div class="field row-check">
           <label class="check"><input id="inNotify" type="checkbox" /><span data-i18n="sNotify">狀態變更時通知（過期／恢復／危急）</span></label>
@@ -108,7 +108,7 @@
       <section>
         <h2 data-i18n="sAbout">關於 About</h2>
         <div class="about-row">
-          <span class="p-name">Codenotch for Windows</span>
+          <span class="p-name">Quota Halo for Windows</span>
           <span class="p-desc" id="appVersion">—</span>
         </div>
         <div class="actions-row danger">

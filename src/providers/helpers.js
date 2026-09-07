@@ -78,7 +78,7 @@ async function http(url, { method = 'GET', headers = {}, body, timeoutMs = 15000
 async function httpJson(url, opts = {}) {
   const res = await http(url, opts);
   const json = tryParse(res.body);
-  return { status: res.status, json, raw: res.body };
+  return { status: res.status, ok: res.status >= 200 && res.status < 300, json, raw: res.body };
 }
 /** Retry-After header: seconds or http-date -> seconds, or null. */
 function retryAfterSeconds(headers) {

@@ -3,7 +3,7 @@
 /**
  * Single packaging entry point. Version comes from package.json (never
  * hard-coded here), the app icon is assets/icon.ico, and the output lands in
- * dist/Codenotch-win32-x64/. Run `npm run package`.
+ * dist/Quota Halo-win32-x64/. Run `npm run package`.
  */
 
 const path = require('path');
@@ -18,7 +18,7 @@ function ignore(re) {
 
 packager({
   dir: ROOT,
-  name: 'Codenotch',
+  name: 'Quota Halo',
   platform: 'win32',
   arch: 'x64',
   out: path.join(ROOT, 'dist'),

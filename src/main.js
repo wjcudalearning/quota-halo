@@ -9,6 +9,9 @@ const credentials = require('./credentials');
 const activity = require('./activity');
 const settingsStore = require('./settingsStore');
 const providers = require('./providers');
+const claudeProvider = require('./providers/claude');
+
+const APP_NAME = 'Quota Halo';
 
 // ---------------------------------------------------------------- geometry --
 // The window holds the whole card; win.setShape narrows the OS hit region to
@@ -47,6 +50,38 @@ let everBroadcast = false;
 
 const userData = () => app.getPath('userData');
 const settingsPath = () => path.join(userData(), 'settings.json');
+
+/** Preserve settings across the product-name change without deleting or
+    modifying the legacy folders. DPAPI-protected values remain valid for the
+    same Windows user. */
+function migrateLegacyUserData() {
+  const destination = userData();
+  const parent = path.dirname(destination);
+  const candidates = ['Codenotch', 'Codenotch for Windows', 'codenotch-win']
+    .map((name) => path.join(parent, name))
+    .filter((dir) => path.resolve(dir) !== path.resolve(destination))
+    .filter((dir) => fs.existsSync(path.join(dir, 'settings.json')))
+    .sort((a, b) => {
+      try { return fs.statSync(path.join(b, 'settings.json')).mtimeMs - fs.statSync(path.join(a, 'settings.json')).mtimeMs; }
+      catch { return 0; }
+    });
+  if (!candidates.length) return;
+  fs.mkdirSync(destination, { recursive: true });
+  let copied = 0;
+  for (const file of ['settings.json', 'last-state.json']) {
+    const target = path.join(destination, file);
+    if (fs.existsSync(target)) continue;
+    const source = candidates.map((dir) => path.join(dir, file)).find((p) => fs.existsSync(p));
+    if (!source) continue;
+    try {
+      fs.copyFileSync(source, target);
+      copied += 1;
+    } catch (err) {
+      console.warn('[migration] could not copy', file, err && err.message);
+    }
+  }
+  if (copied) console.log(`[migration] imported ${copied} file(s) from ${candidates[0]}`);
+}
 
 function reloadSettings() {
   settings = settingsStore.load(settingsFile || settingsPath());
@@ -203,6 +238,12 @@ function cardRect() {
 function setMode(mode) {
   currentMode = mode;
   if (!win || win.isDestroyed()) return;
+  // While the notch is collapsed, the renderer may already have measured a
+  // taller detail card and updated CARD_H. The window itself deliberately
+  // stays put in pill mode, so apply that pending size *before* exposing the
+  // card; otherwise the old, shorter transparent window clips the detail
+  // panel and makes the bottom rounded corners appear to disappear.
+  if (mode === 'card') placeWindow();
   try {
     if (mode === 'card') win.setShape([cardRect()]);
     else win.setShape([pillRect()]);
@@ -461,7 +502,7 @@ function updateTray() {
   if (!tray) return;
   const p = lastPayload ? lastPayload.providers : [];
   const parts = p.map((x) => (x.state === 'ok' ? `${x.name} ${x.headline}` : x.state === 'needsAuth' ? `${x.name} needs sign-in` : `${x.name} unavailable`));
-  tray.setToolTip(`Codenotch · ${parts.join(' · ') || 'no providers'}`);
+  tray.setToolTip(`${APP_NAME} · ${parts.join(' · ') || 'no providers'}`);
   tray.setContextMenu(buildMenu());
 }
 function rebuildMenu() {
@@ -498,7 +539,7 @@ function buildMenu() {
     { type: 'separator' },
     { label: 'Settings\u2026', click: () => openSettingsWindow() },
     { type: 'separator' },
-    { label: 'Quit Codenotch', click: () => quitApp() }
+    { label: `Quit ${APP_NAME}`, click: () => quitApp() }
   );
   return Menu.buildFromTemplate(items);
 }
@@ -784,14 +825,20 @@ ipcMain.handle('settings:probe', () => {
     ? { ok: true, status: 'ok', detail: `key found @ ${shortPath(deep.file) || '~/.dsh/.credentials.yaml'}`, next: '' }
     : { ok: false, status: 'missing', detail: `no ${deep.name || 'DEEPSEEK_API_KEY'} @ ${shortPath(deep.file) || '~/.dsh/.credentials.yaml'}`, next: 'Open DSH so it writes the key' };
 
-  const orKey = decryptOpenRouterKey();
+  // Match the provider's lookup order, including OPENROUTER_API_KEY in the
+  // DSH credentials file; otherwise Settings can incorrectly say that no key
+  // exists while the OpenRouter card is already using one.
+  const orKey = resolveKey({ ...settings, openrouterApiKey: decryptOpenRouterKey() });
   creds.openrouter = orKey
     ? { ok: true, status: 'ok', detail: 'sk-or-' + orKey.slice(-4), next: '' }
     : { ok: false, status: 'missing', detail: 'no sk-or- key', next: 'Create one at openrouter.ai/keys, paste above' };
 
+  const desktopClaude = claudeProvider.readDesktopUsage();
   const cf = path.join(home, '.claude', '.credentials.json');
-  if (!fs.existsSync(cf)) {
-    creds.claude = { ok: false, status: 'missing', detail: 'no ~/.claude/.credentials.json', next: 'Run "claude" once to sign in' };
+  if (desktopClaude) {
+    creds.claude = { ok: true, status: 'ok', detail: `Claude Desktop cache · ${shortPath(desktopClaude.file)}`, next: '' };
+  } else if (!fs.existsSync(cf)) {
+    creds.claude = { ok: false, status: 'missing', detail: 'no Claude Desktop usage or Claude Code login', next: 'Open Claude Desktop or sign in with Claude Code' };
   } else {
     let expired = null;
     try {
@@ -879,9 +926,10 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
+    migrateLegacyUserData();
     settingsFile = settingsPath();
     reloadSettings();
-    app.setName('Codenotch');
+    app.setName(APP_NAME);
     notchPos = settings.notchPos || null;
     dbg('ready: creating window');
 
@@ -892,7 +940,7 @@ if (!gotLock) {
     createNotchWindow();
     ensureTrayIcon();
     tray = new Tray(ensureTrayIcon());
-    tray.setToolTip('Codenotch');
+    tray.setToolTip(APP_NAME);
     tray.setContextMenu(buildMenu());
     if (process.platform === 'win32') {
       tray.on('double-click', () => toggleNotch());

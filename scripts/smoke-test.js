@@ -14,10 +14,10 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const APP_DIR = path.join(ROOT, 'dist', 'Codenotch-win32-x64');
+const APP_DIR = path.join(ROOT, 'dist', 'Quota Halo-win32-x64');
 
 const REQUIRED = [
-  'Codenotch.exe',
+  'Quota Halo.exe',
   'resources/app/src/main.js',
   'resources/app/src/preload.js',
   'resources/app/renderer/index.html',
@@ -52,7 +52,7 @@ if (fs.existsSync(path.join(APP_DIR, 'resources', 'app', 'package.json'))) {
 
 function launchOnce() {
   return new Promise((resolve) => {
-    const exe = path.join(APP_DIR, 'Codenotch.exe');
+    const exe = path.join(APP_DIR, 'Quota Halo.exe');
     if (!fs.existsSync(exe)) return resolve();
     const child = spawn(exe, ['--smoke'], { detached: false, stdio: 'ignore' });
     let exited = false;

@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 const PROVIDER_META = [
   { id: 'deepseek', name: 'DeepSeek', desc: 'DSH 後端 · 餘額' },
-  { id: 'openrouter', name: 'OpenRouter', desc: '預付點數餘額' },
+  { id: 'openrouter', name: 'OpenRouter', desc: '帳號餘額（Management API key）' },
   { id: 'claude', name: 'Claude', desc: 'Claude Code 用量上限' },
   { id: 'codex', name: 'Codex', desc: 'ChatGPT / OpenAI 用量視窗' },
   { id: 'antigravity', name: 'Antigravity', desc: 'Gemini Code Assist · 用量上限' },
@@ -71,6 +71,7 @@ function stateLabel(state) {
     case 'ok': return 'normal';
     case 'expired': return '過期';
     case 'needsAuth': return '登入';
+    case 'needsManagementKey': return '需要管理金鑰';
     case 'rateLimited': return '限流';
     case 'error': return '錯誤';
     default: return state || '';
@@ -219,7 +220,7 @@ function syncEdge(edge) {
 el.orKey.addEventListener('input', () => { validateORKey(); saveORKey(false); });
 el.orKey.addEventListener('change', () => { validateORKey(); saveORKey(true); });
 el.orVerify.addEventListener('click', () => { window.codenotch.action('refresh'); flash('正在驗證 OpenRouter 連線…'); });
-el.orKeysBtn.addEventListener('click', () => window.codenotch.openExternal('https://openrouter.ai/keys'));
+el.orKeysBtn.addEventListener('click', () => window.codenotch.openExternal('https://openrouter.ai/settings/keys'));
 el.orShow.addEventListener('click', () => {
   const t = el.orKey.type === 'password' ? 'text' : 'password';
   el.orKey.type = t;

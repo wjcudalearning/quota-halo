@@ -1,8 +1,8 @@
 {
-  "name": "codenotch-win",
-  "productName": "Codenotch",
+  "name": "quota-halo",
+  "productName": "Quota Halo",
   "version": "0.3.0",
-  "description": "A Windows notch overlay that pins to the top of the screen and shows the live usage / credit of the AI coding accounts on this machine (DSH DeepSeek, OpenRouter, Claude, Codex, Antigravity).",
+  "description": "A polished Windows halo overlay for live AI coding usage and credit across DeepSeek, OpenRouter, Claude, Codex, and Antigravity.",
   "main": "src/main.js",
   "author": "ported for local use",
   "license": "MIT",

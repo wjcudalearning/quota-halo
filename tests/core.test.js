@@ -51,6 +51,7 @@ test('openrouter parseAuthKey + parseCredits (live shapes)', () => {
   const auth = openrouter.parseAuthKey({ data: { label: 'k', is_free_tier: false, limit: null, usage: 0, limit_remaining: null } });
   assert.equal(auth.remaining, null);
   assert.equal(auth.free, false);
+  assert.equal(auth.management, false);
   // credits: { data: { total_credits, total_usage } }
   const credits = openrouter.parseCredits({ data: { total_credits: 40, total_usage: 20.63 } });
   assert.equal(credits.free, false);
@@ -160,6 +161,79 @@ test('openrouter parseAuthKey matches auth-key fixture (limit null, no cap)', ()
   assert.equal(a.limit, null);
   assert.equal(a.remaining, null);
   assert.equal(a.free, false);
+  assert.equal(a.management, false);
+});
+
+async function withFetch(fetchImpl, work) {
+  const saved = global.fetch;
+  global.fetch = fetchImpl;
+  try {
+    return await work();
+  } finally {
+    global.fetch = saved;
+  }
+}
+
+test('OpenRouter uses the current key endpoint before account credits', async () => {
+  const calls = [];
+  await withFetch(async (url) => {
+    calls.push(String(url));
+    if (url === openrouter.CURRENT_KEY_URL) {
+      return new Response(JSON.stringify({
+        data: { label: 'balance reader', is_management_key: true, is_free_tier: false, limit: null, usage: 0, limit_remaining: null },
+      }), { status: 200 });
+    }
+    if (url === openrouter.CREDITS_URL) {
+      return new Response(JSON.stringify({ data: { total_credits: 40, total_usage: 20.63 } }), { status: 200 });
+    }
+    throw new Error(`unexpected URL ${url}`);
+  }, async () => {
+    const result = await openrouter.fetchSnapshot({ openrouterApiKey: 'sk-or-test' });
+    assert.equal(result.state, 'ok');
+    assert.equal(result.headline, '$19.37');
+    assert.equal(result.rows.find((r) => r.k === 'Purchased').v, '$40.00');
+  });
+  assert.deepEqual(calls, [openrouter.CURRENT_KEY_URL, openrouter.CREDITS_URL]);
+});
+
+test('OpenRouter identifies a normal key without an account-credit scope', async () => {
+  const calls = [];
+  await withFetch(async (url) => {
+    calls.push(String(url));
+    return new Response(JSON.stringify({
+      data: { label: 'inference only', is_management_key: false, is_free_tier: false, limit: null, usage: 0, limit_remaining: null },
+    }), { status: 200 });
+  }, async () => {
+    const result = await openrouter.fetchSnapshot({ openrouterApiKey: 'sk-or-test' });
+    assert.equal(result.state, 'needsManagementKey');
+    assert.equal(result.badge, 'MANAGEMENT');
+  });
+  assert.deepEqual(calls, [openrouter.CURRENT_KEY_URL]);
+});
+
+test('Claude OAuth uses the current token host and normalizes epoch seconds', () => {
+  assert.equal(claude.OAUTH_TOKEN_URL, 'https://platform.claude.com/v1/oauth/token');
+  assert.equal(claude.usageEndpoint(), 'https://api.anthropic.com/api/oauth/usage');
+  assert.equal(claude.epochMs(1787116079), 1787116079000);
+  assert.equal(claude.epochMs(1787116079567), 1787116079567);
+  assert.equal(claude.epochMs('bad'), 0);
+});
+
+test('Claude Desktop usage cache selects the newest fresh sample', () => {
+  const now = Date.UTC(2026, 8, 7, 8, 0, 0);
+  const usage = claude.parseDesktopUsageHistory({
+    version: 2,
+    samples: [
+      { t: now - 20 * 60 * 1000, u: { fh: 80, sd: 20 } },
+      { t: now - 5 * 60 * 1000, u: { fh: 100, sd: 34 } },
+    ],
+  }, now);
+  assert.equal(usage.updatedAtMs, now - 5 * 60 * 1000);
+  assert.deepEqual(usage.windows.map((w) => [w.id, w.usedFraction]), [
+    ['session', 1],
+    ['weekly_all', 0.34],
+  ]);
+  assert.equal(claude.parseDesktopUsageHistory({ samples: [{ t: now - 2 * 60 * 60 * 1000, u: { fh: 10 } }] }, now), null);
 });
 
 test('codex windows from wham fixture invert to used', () => {

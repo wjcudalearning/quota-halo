@@ -1,6 +1,6 @@
 'use strict';
 
-/* Codenotch for Windows — renderer. Renders one ring-cell per provider from
+/* Quota Halo for Windows — renderer. Renders one ring-cell per provider from
    snapshots pushed by the main process. */
 
 const $ = (id) => document.getElementById(id);
@@ -56,6 +56,7 @@ function syncBusy() {
 function stateColor(p) {
   if (p.state !== 'ok') {
     if (p.state === 'needsAuth' || p.state === 'expired') return COLORS.crit;
+    if (p.state === 'needsManagementKey') return COLORS.low;
     return COLORS.idle;
   }
   return COLORS[p.level] || COLORS.ok;
@@ -71,6 +72,7 @@ const BADGE_KEY = {
   UNAVAIL: 'bUnavail',
   RATE: 'bRate',
   TIMEOUT: 'bTimeout',
+  MANAGEMENT: 'bManagement',
 };
 
 function badgeLabel(p) {
@@ -78,6 +80,7 @@ function badgeLabel(p) {
   if (p.state !== 'ok') {
     if (p.state === 'expired') return t('bExpired');
     if (p.state === 'needsAuth') return t('bSignIn');
+    if (p.state === 'needsManagementKey') return t('bManagement');
     if (p.state === 'rateLimited') return t('bRate');
     if (p.state === 'error') return p.stale ? t('bStale') : t('bError');
     return p.state.toUpperCase();
@@ -283,7 +286,7 @@ function showDetail(pick) {
   dpPlan.textContent = (disp.plan && disp.plan !== 'Personal' ? disp.plan : '') || '';
   dpFid.textContent = pick.state !== 'ok'
     ? (pick.stale ? window.I18N.t('bStale') : pick.badge ? window.I18N.t(BADGE_KEY[pick.badge] || 'bError') : pick.state)
-    : (disp.fidelity === 'official' ? window.I18N.t('official') : disp.fidelity === 'derived' ? window.I18N.t('derived') : disp.fidelity || '');
+    : (disp.fidelity === 'official' ? window.I18N.t('official') : disp.fidelity === 'derived' ? window.I18N.t('derived') : disp.fidelity === 'cached' ? window.I18N.t('cached') : disp.fidelity || '');
   dpUpd.textContent = pick.state !== 'ok'
     ? (pick.stale && pick.staleOf && pick.staleOf.updatedAt ? window.I18N.t('lastGood', { ago: timeAgo(pick.staleOf.updatedAt) }) : pick.message || pick.state)
     : (disp.updatedAt ? window.I18N.t('updatedAgo', { ago: timeAgo(disp.updatedAt) }) : '');

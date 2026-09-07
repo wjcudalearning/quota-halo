@@ -1,14 +1,15 @@
 'use strict';
 
 /**
- * OpenRouter — prepaid credit account. Two endpoints, both read:
- *   GET https://openrouter.ai/api/v1/auth/key   (account + free-tier + per-key limit)
+ * OpenRouter — prepaid credit account. Two current API endpoints are read:
+ *   GET https://openrouter.ai/api/v1/key         (the authenticated key's metadata)
  *   GET https://openrouter.ai/api/v1/credits     (total_credits vs total_usage)
  *
  * The live responses differ from the documented shape, so parsing is defensive:
  *   - credits → { "data": { "total_credits": 40, "total_usage": 20.63 } }
  *     or the legacy { "credits": { total, used, limit } }.
- *   - auth/key → { "data": { label, is_free_tier, limit, usage, limit_remaining } }.
+ *   - key → { "data": { label, is_free_tier, is_management_key, limit,
+ *     usage, limit_remaining } }.
  *
  * Key sources (first match wins): pasted in Settings → env OPENROUTER_API_KEY →
  * OPENROUTER_API_KEY inside the DSH credentials file.
@@ -17,7 +18,10 @@
 const { httpJson, levelForMoney } = require('./helpers');
 const credentials = require('../credentials');
 
-const AUTH_KEY_URL = 'https://openrouter.ai/api/v1/auth/key';
+// `/api/v1/auth/key` was retired. `/api/v1/key` works with both ordinary
+// inference keys and Management API keys. Account-wide credits, however, are
+// deliberately available only to a Management API key.
+const CURRENT_KEY_URL = 'https://openrouter.ai/api/v1/key';
 const CREDITS_URL = 'https://openrouter.ai/api/v1/credits';
 
 function num(v) {
@@ -50,7 +54,7 @@ function levelFor(remaining) {
   return levelForMoney(remaining);
 }
 
-function moneyResult(b, { total, used, limit, remaining, free, label }) {
+function moneyResult(b, { total, used, limit, remaining, free, label, source = 'account' }) {
   if (free) {
     return {
       ...b,
@@ -73,10 +77,16 @@ function moneyResult(b, { total, used, limit, remaining, free, label }) {
   }
   const level = levelFor(rem);
   const rows = [];
-  if (label) rows.push({ k: 'Account', v: label });
-  if (num(total) != null) rows.push({ k: 'Budget', v: money(total) });
-  if (num(used) != null) rows.push({ k: 'Used', v: money(used) });
-  rows.push({ k: 'Remaining', v: money(rem) });
+  if (label) rows.push({ k: source === 'key' ? 'API key' : 'Account', v: label });
+  if (source === 'key') {
+    if (num(limit) != null) rows.push({ k: 'Key limit', v: money(limit) });
+    if (num(used) != null) rows.push({ k: 'Key used', v: money(used) });
+    rows.push({ k: 'Key remaining', v: money(rem) });
+  } else {
+    if (num(total) != null) rows.push({ k: 'Purchased', v: money(total) });
+    if (num(used) != null) rows.push({ k: 'Used', v: money(used) });
+    rows.push({ k: 'Remaining', v: money(rem) });
+  }
   return {
     ...b,
     state: 'ok',
@@ -115,6 +125,7 @@ function parseAuthKey(json) {
   return {
     label: d.label || null,
     free,
+    management: d.is_management_key === true,
     limit,
     usage,
     remaining: remaining != null ? remaining : limit != null && usage != null ? Math.max(0, limit - usage) : null,
@@ -143,22 +154,53 @@ async function fetchSnapshot(settings, signal) {
     };
   }
 
-  // 1) account info (label, free tier, per-key limit) — informational.
+  // 1) Key metadata. This endpoint authenticates both normal inference keys
+  // and Management API keys, so it is the reliable first request.
   let account = null;
   try {
-    const a = await httpJson(AUTH_KEY_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
-    if (a.status === 401 || a.status === 403) {
+    const a = await httpJson(CURRENT_KEY_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
+    if (a.status === 401) {
       return { ...b, state: 'needsAuth', headline: '\u2014', badge: 'AUTH', rows: [{ k: 'Key rejected', v: `HTTP ${a.status}` }], message: `OpenRouter rejected the key (HTTP ${a.status})`, hint: 'Check the key in Settings' };
     }
-    if (a.status === 200) account = parseAuthKey(a.json);
-  } catch {
-    /* fall through to credits */
+    if (a.status !== 200) return errResult(`key endpoint failed (HTTP ${a.status})`);
+    account = parseAuthKey(a.json);
+    if (!account) return errResult('key endpoint returned an unrecognized response');
+  } catch (err) {
+    return errResult(String((err && err.message) || err));
   }
   if (account && account.free) {
     return moneyResult(b, { free: true, label: account.label });
   }
 
-  // 2) credits — the money figure.
+  // A normal inference key may carry its own credit cap. That is useful and
+  // readable without asking for more privilege, but it is not the account
+  // balance, so label it honestly.
+  if (!account.management) {
+    if (account.remaining != null) {
+      return moneyResult(b, {
+        total: account.limit,
+        used: account.usage,
+        limit: account.limit,
+        remaining: account.remaining,
+        label: account.label,
+        source: 'key',
+      });
+    }
+    return {
+      ...b,
+      state: 'needsManagementKey',
+      headline: '\u2014',
+      badge: 'MANAGEMENT',
+      rows: [
+        { k: 'Account balance unavailable', v: '' },
+        { k: 'Fix', v: 'Paste an OpenRouter Management API key in Settings' },
+      ],
+      message: 'OpenRouter account credits require a Management API key; this inference key has no per-key limit to display.',
+      hint: 'Settings \u2192 OpenRouter Management API key',
+    };
+  }
+
+  // 2) Management keys may read the account-wide purchased-credit balance.
   try {
     const c = await httpJson(CREDITS_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
     if (c.status === 401 || c.status === 403) {
@@ -176,4 +218,16 @@ async function fetchSnapshot(settings, signal) {
   return errResult('unrecognized response');
 }
 
-module.exports = { fetchSnapshot, id: 'openrouter', name: 'OpenRouter', glyph: 'OR', resolveKey, money, levelFor, parseAuthKey, parseCredits };
+module.exports = {
+  fetchSnapshot,
+  id: 'openrouter',
+  name: 'OpenRouter',
+  glyph: 'OR',
+  resolveKey,
+  money,
+  levelFor,
+  parseAuthKey,
+  parseCredits,
+  CURRENT_KEY_URL,
+  CREDITS_URL,
+};
