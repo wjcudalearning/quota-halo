@@ -196,19 +196,37 @@ test('OpenRouter uses the current key endpoint before account credits', async ()
   assert.deepEqual(calls, [openrouter.CURRENT_KEY_URL, openrouter.CREDITS_URL]);
 });
 
-test('OpenRouter identifies a normal key without an account-credit scope', async () => {
+test('OpenRouter tries credits even when key metadata says non-management', async () => {
   const calls = [];
   await withFetch(async (url) => {
     calls.push(String(url));
-    return new Response(JSON.stringify({
-      data: { label: 'inference only', is_management_key: false, is_free_tier: false, limit: null, usage: 0, limit_remaining: null },
-    }), { status: 200 });
+    if (url === openrouter.CURRENT_KEY_URL) {
+      return new Response(JSON.stringify({
+        data: { label: 'DSH key', is_management_key: false, is_free_tier: false, limit: null, usage: 0, limit_remaining: null },
+      }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ data: { total_credits: 40, total_usage: 20.63 } }), { status: 200 });
+  }, async () => {
+    const result = await openrouter.fetchSnapshot({ openrouterApiKey: 'sk-or-test' });
+    assert.equal(result.state, 'ok');
+    assert.equal(result.headline, '$19.37');
+  });
+  assert.deepEqual(calls, [openrouter.CURRENT_KEY_URL, openrouter.CREDITS_URL]);
+});
+
+test('OpenRouter requests a Management key only after credits rejects a normal key', async () => {
+  await withFetch(async (url) => {
+    if (url === openrouter.CURRENT_KEY_URL) {
+      return new Response(JSON.stringify({
+        data: { label: 'inference only', is_management_key: false, is_free_tier: false, limit: null, usage: 0, limit_remaining: null },
+      }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ error: { message: 'forbidden' } }), { status: 403 });
   }, async () => {
     const result = await openrouter.fetchSnapshot({ openrouterApiKey: 'sk-or-test' });
     assert.equal(result.state, 'needsManagementKey');
     assert.equal(result.badge, 'MANAGEMENT');
   });
-  assert.deepEqual(calls, [openrouter.CURRENT_KEY_URL]);
 });
 
 test('Claude OAuth uses the current token host and normalizes epoch seconds', () => {

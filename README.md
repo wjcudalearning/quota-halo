@@ -1,4 +1,8 @@
-# Quota Halo
+<p align="center">
+  <img src="assets/icon.png" width="128" height="128" alt="Quota Halo logo" />
+</p>
+
+<h1 align="center">Quota Halo</h1>
 
 > 一個停駐在 Windows 螢幕邊緣的 AI 用量光環。
 
@@ -8,9 +12,9 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 
 ## 下載
 
-目前版本：**v0.3.1**
+目前版本：**v0.3.2**
 
-- [下載 Quota Halo v0.3.1（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.1/Quota-Halo-v0.3.1-win-x64.zip)
+- [下載 Quota Halo v0.3.2（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.2/Quota-Halo-v0.3.2-win-x64.zip)
 - [查看所有 Releases](https://github.com/wjcudalearning/quota-halo/releases)
 
 解壓縮後執行 `Quota Halo.exe` 即可，不需要安裝。系統需求為 Windows 10/11 x64。
@@ -31,7 +35,7 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 | 供應商 | 顯示內容 | 資料來源 |
 |---|---|---|
 | **DeepSeek** | 可用美元餘額 | `~/.dsh/.credentials.yaml` 中的 `DEEPSEEK_API_KEY` |
-| **OpenRouter** | 帳號預付餘額，或一般金鑰自身的額度上限 | 設定頁的 Management API Key、環境變數或 DSH 憑證檔 |
+| **OpenRouter** | 帳號預付餘額，或金鑰自身的額度上限 | 自動讀取 DSH 憑證檔中的 `OPENROUTER_API_KEY`，也可由設定頁或環境變數覆寫 |
 | **Claude** | 圓圈顯示當前 session 剩餘比例；詳細頁顯示各時段已使用比例 | Claude Code OAuth；失效時自動使用 Claude Desktop 官方本機用量快取 |
 | **Codex** | 5 小時與每週用量 | `~/.codex/auth.json` |
 | **Antigravity** | Gemini 配額；無授權配額時顯示今日請求數 | Windows Credential Manager 與本機活動紀錄 |
@@ -40,7 +44,9 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 
 ## OpenRouter 設定
 
-若要顯示帳號層級的預付餘額，請在設定頁貼入 `sk-or-…` 格式的 **Management API Key**。一般 inference key 只能讀取該金鑰自身設定的花費上限；沒有自身上限時，Quota Halo 會明確提示需要 Management Key，不會把它誤認成連線失敗。
+只要在 DeepSeek Harness／DSH 的 `~/.dsh/.credentials.yaml` 設定 `OPENROUTER_API_KEY`，Quota Halo 就會自動沿用，不需要再次貼到設定頁。設定頁與 `OPENROUTER_API_KEY` 環境變數可用來覆寫 DSH 值。
+
+程式會直接嘗試帳號餘額 API，不會只憑 `is_management_key` 欄位阻擋一般金鑰；只有 OpenRouter 實際拒絕 `/credits` 時，才會改顯示金鑰本身的限額或提示使用 Management API Key。
 
 Quota Halo 使用目前的 OpenRouter 端點：
 
@@ -62,7 +68,7 @@ Claude 圓圈中央的數字代表 **當前 session 剩餘百分比**；圓環�
 從系統匣圖示或展開卡片右上角的齒輪開啟設定，可以：
 
 - 啟用或停用各供應商
-- 設定 OpenRouter Management API Key
+- 檢查 DSH 內的 OpenRouter 金鑰，或設定選用的覆寫金鑰
 - 選擇 DeepSeek 憑證檔與金鑰名稱
 - 切換上方或下方螢幕邊緣
 - 固定卡片展開

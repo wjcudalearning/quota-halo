@@ -18,9 +18,9 @@
 const { httpJson, levelForMoney } = require('./helpers');
 const credentials = require('../credentials');
 
-// `/api/v1/auth/key` was retired. `/api/v1/key` works with both ordinary
-// inference keys and Management API keys. Account-wide credits, however, are
-// deliberately available only to a Management API key.
+// `/api/v1/auth/key` was retired. `/api/v1/key` works with both ordinary and
+// Management API keys. Whether a key may read account-wide credits is decided
+// by the live `/credits` response, not the key-type metadata flag.
 const CURRENT_KEY_URL = 'https://openrouter.ai/api/v1/key';
 const CREDITS_URL = 'https://openrouter.ai/api/v1/credits';
 
@@ -172,10 +172,11 @@ async function fetchSnapshot(settings, signal) {
     return moneyResult(b, { free: true, label: account.label });
   }
 
-  // A normal inference key may carry its own credit cap. That is useful and
-  // readable without asking for more privilege, but it is not the account
-  // balance, so label it honestly.
-  if (!account.management) {
+  // Do not gate `/credits` on is_management_key. OpenRouter currently allows
+  // some regular keys (including keys supplied by DSH) to read account credit
+  // even though `/key` reports is_management_key=false. The credits HTTP
+  // response itself is the source of truth.
+  const keyOnlyResult = () => {
     if (account.remaining != null) {
       return moneyResult(b, {
         total: account.limit,
@@ -198,24 +199,25 @@ async function fetchSnapshot(settings, signal) {
       message: 'OpenRouter account credits require a Management API key; this inference key has no per-key limit to display.',
       hint: 'Settings \u2192 OpenRouter Management API key',
     };
-  }
+  };
 
-  // 2) Management keys may read the account-wide purchased-credit balance.
+  // 2) Try account-wide credits for every authenticated key. Only ask for a
+  // Management key when OpenRouter itself rejects this endpoint.
   try {
     const c = await httpJson(CREDITS_URL, { headers: { Authorization: `Bearer ${key}` }, signal });
     if (c.status === 401 || c.status === 403) {
-      return { ...b, state: 'needsAuth', headline: '\u2014', badge: 'AUTH', rows: [{ k: 'Key rejected', v: `HTTP ${c.status}` }], message: `OpenRouter rejected the key (HTTP ${c.status})`, hint: 'Check the key in Settings' };
+      return keyOnlyResult();
     }
     if (c.status === 200) {
       const credits = parseCredits(c.json);
       if (credits) return moneyResult(b, { ...credits, label: account ? account.label : null });
     }
+    if (account.remaining != null) return keyOnlyResult();
+    return errResult(`credits endpoint failed (HTTP ${c.status})`);
   } catch (err) {
+    if (account.remaining != null) return keyOnlyResult();
     return errResult(String((err && err.message) || err));
   }
-
-  // 3) no shape we understand.
-  return errResult('unrecognized response');
 }
 
 module.exports = {

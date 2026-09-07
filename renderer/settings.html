@@ -40,17 +40,17 @@
           <input id="inKeyName" type="text" spellcheck="false" />
         </div>
         <div class="field">
-          <label for="inORKey" data-i18n="sOpenrouterKey">OpenRouter Management API 金鑰</label>
+          <label for="inORKey" data-i18n="sOpenrouterKey">OpenRouter API 金鑰（選填）</label>
           <div class="combo">
             <input id="inORKey" type="password" spellcheck="false" autocomplete="off" data-i18n-ph="sOrPh" />
             <button id="btnORShow" class="btn" data-i18n-title="sOrShow" aria-label="顯示或隱藏金鑰">👁</button>
             <button id="btnORClear" class="btn" data-i18n="sOrClear">清除</button>
           </div>
-          <p class="hint" data-i18n="sOrHint">要讀帳號餘額，請使用 Management API 金鑰；一般 inference 金鑰只能讀自己的限額。金鑰存於本機 app 設定檔，也可設 OPENROUTER_API_KEY 環境變數。</p>
+          <p class="hint" data-i18n="sOrHint">會自動讀取 DSH 憑證檔中的 OPENROUTER_API_KEY；也可在此覆寫或使用環境變數。若 OpenRouter 拒絕帳號餘額 API，才需要 Management API 金鑰。</p>
           <p id="orHint" class="hint warn hidden" data-i18n="sOrWarn">這不是 sk-or- 開頭的金鑰（看起來像網址）。請到 openrouter.ai/keys 複製 sk-or-… 貼上。</p>
           <div class="actions-row">
             <button id="btnORVerify" class="btn" data-i18n="sOrVerify">驗證連線</button>
-            <button id="btnORKeys" class="btn" data-i18n="sOrCreate">到 OpenRouter 建立管理金鑰…</button>
+            <button id="btnORKeys" class="btn" data-i18n="sOrCreate">到 OpenRouter 建立金鑰…</button>
           </div>
         </div>
         <div id="probe" class="probe">檢查中…</div>

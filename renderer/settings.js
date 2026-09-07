@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 const PROVIDER_META = [
   { id: 'deepseek', name: 'DeepSeek', desc: 'DSH 後端 · 餘額' },
-  { id: 'openrouter', name: 'OpenRouter', desc: '帳號餘額（Management API key）' },
+  { id: 'openrouter', name: 'OpenRouter', desc: '帳號餘額（自動讀取 DSH 金鑰）' },
   { id: 'claude', name: 'Claude', desc: 'Claude Code 用量上限' },
   { id: 'codex', name: 'Codex', desc: 'ChatGPT / OpenAI 用量視窗' },
   { id: 'antigravity', name: 'Antigravity', desc: 'Gemini Code Assist · 用量上限' },
