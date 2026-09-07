@@ -236,6 +236,14 @@ test('Claude Desktop usage cache selects the newest fresh sample', () => {
   assert.equal(claude.parseDesktopUsageHistory({ samples: [{ t: now - 2 * 60 * 60 * 1000, u: { fh: 10 } }] }, now), null);
 });
 
+test('Claude ring shows current-session remaining percentage', () => {
+  assert.equal(claude.currentSessionRemaining([
+    { id: 'session', usedFraction: 0.88 },
+    { id: 'weekly_all', usedFraction: 0.34 },
+  ]), 0.12);
+  assert.equal(claude.currentSessionRemaining([{ id: 'session', usedFraction: 1 }]), 0);
+});
+
 test('codex windows from wham fixture invert to used', () => {
   const w = FIX('codex-wham.json');
   const used = codex.usedFromRemaining(w.rate_limit.primary_window.used_percent);

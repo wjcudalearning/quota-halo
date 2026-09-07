@@ -234,6 +234,12 @@ function readDesktopUsage(now = Date.now()) {
   return newest;
 }
 
+function currentSessionRemaining(windows) {
+  const session = windows.find((w) => w.id === 'session') || windows[0];
+  const used = Number(session && session.usedFraction);
+  return Number.isFinite(used) ? Math.max(0, Math.min(1, 1 - used)) : null;
+}
+
 function finishSnapshot(b, windows, options = {}) {
   windows.sort((x, y) => {
     const rk = (w) => (w.id === 'session' ? 0 : w.id === 'weekly_all' ? 1 : 2);
@@ -241,6 +247,7 @@ function finishSnapshot(b, windows, options = {}) {
   });
   const headline = windows.reduce((a, w) => (w.usedFraction > a.usedFraction ? w : a), windows[0]);
   const frac = headline.usedFraction;
+  const remaining = currentSessionRemaining(windows);
   const level = levelFor(frac);
   const rows = windows.map((w) => {
     const when = w.resetsAtMs ? ` \u00b7 resets ${fmtReset(w.resetsAtMs)}` : '';
@@ -251,12 +258,15 @@ function finishSnapshot(b, windows, options = {}) {
     ...b,
     fidelity: options.fidelity || b.fidelity,
     state: 'ok',
-    headline: `${Math.round(frac * 100)}%`,
-    headlineRaw: frac,
+    // The compact Claude ring answers the most useful question at a glance:
+    // how much of the current session is left. The arc, level and detail bars
+    // remain usage-based so a depleted session still renders as critical.
+    headline: remaining == null ? '\u2014' : `${Math.round(remaining * 100)}%`,
+    headlineRaw: remaining,
     fraction: frac,
     level,
     badge: level === 'crit' ? 'CRIT' : level === 'low' ? 'LOW' : 'OK',
-    caption: 'USED',
+    caption: 'LEFT',
     rows,
     windows: windows.map((w) => ({
       label: w.label,
@@ -381,6 +391,7 @@ module.exports = {
   parseDesktopUsageHistory,
   readDesktopUsage,
   desktopUsagePaths,
+  currentSessionRemaining,
   usageEndpoint: ENDPOINT,
   OAUTH_TOKEN_URL,
 };

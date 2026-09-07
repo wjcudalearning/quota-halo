@@ -1,7 +1,7 @@
 {
   "name": "quota-halo",
   "productName": "Quota Halo",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A polished Windows halo overlay for live AI coding usage and credit across DeepSeek, OpenRouter, Claude, Codex, and Antigravity.",
   "main": "src/main.js",
   "author": "ported for local use",
