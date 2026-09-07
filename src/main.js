@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, shell, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -50,12 +50,53 @@ function saveSettings(patch) {
   settingsStore.save(settingsFile || settingsPath(), settings);
 }
 
+/** Resolve the OpenRouter key for polling: prefer the DPAPI-encrypted value,
+    fall back to a legacy plaintext value, then the env var. */
+function decryptOpenRouterKey() {
+  if (settings.openrouterApiKeyEnc) {
+    try {
+      if (safeStorage.isEncryptionAvailable()) {
+        return safeStorage.decryptString(Buffer.from(settings.openrouterApiKeyEnc, 'base64'));
+      }
+    } catch (err) {
+      console.warn('[openrouter] decrypt failed:', err && err.message);
+    }
+  }
+  if (settings.openrouterApiKey && String(settings.openrouterApiKey).startsWith('sk-or-')) {
+    return settings.openrouterApiKey;
+  }
+  return process.env.OPENROUTER_API_KEY || null;
+}
+
+/** Encrypt & store an OpenRouter key; never writes the plaintext to disk. */
+function encryptStoreOpenRouterKey(value) {
+  let enc = null;
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      enc = safeStorage.encryptString(value).toString('base64');
+    }
+  } catch (err) {
+    console.warn('[openrouter] encrypt failed:', err && err.message);
+  }
+  return {
+    openrouterApiKeyEnc: enc,
+    openrouterApiKey: enc ? undefined : value, // fall back to plaintext only if DPAPI unusable
+    openrouterApiKeyHint: '…' + value.slice(-4),
+  };
+}
+
 function enabledCount() {
   return providers.enabledProviders(settings).length;
 }
 
 function workArea() {
   return screen.getPrimaryDisplay().workArea;
+}
+
+function shortPath(p) {
+  if (!p) return '';
+  const home = (process.env.USERPROFILE || os.homedir()).replace(/\\/g, '/');
+  return p.replace(/\\/g, '/').replace(home, '~');
 }
 
 function placeWindow() {
@@ -192,7 +233,8 @@ async function runPoll() {
   pollInFlight = (async () => {
     try {
       dbg('runPoll start');
-      const results = await providers.fetchAll(settings);
+      const fetchSettings = { ...settings, openrouterApiKey: decryptOpenRouterKey() };
+      const results = await providers.fetchAll(fetchSettings);
       dbg(`runPoll fetched ${results.length}`);
       const act = activity.sampleActivity();
       lastPayload = buildPayload(results, act);
@@ -501,7 +543,10 @@ ipcMain.on('ui:action', (event, action) => {
   }
 });
 
-ipcMain.handle('settings:get', () => ({ ...settings, _width: cardWidthFor(enabledCount()), _cardH: CARD_H }));
+ipcMain.handle('settings:get', () => {
+  const { openrouterApiKey, openrouterApiKeyEnc, ...rest } = settings;
+  return { ...rest, _width: cardWidthFor(enabledCount()), _cardH: CARD_H };
+});
 
 const SETTABLE = new Set([
   'refreshSeconds',
@@ -553,13 +598,19 @@ ipcMain.handle('settings:set', (_e, patch) => {
     }
     clean.providers = flags;
   }
-  // Only persist an OpenRouter value that is actually a key (or empty).
+  // Only persist an OpenRouter value that is actually a key (or empty), and
+  // store it encrypted via Electron safeStorage (DPAPI on Windows).
   if ('openrouterApiKey' in clean) {
     const v = String(clean.openrouterApiKey || '').trim();
-    if (v && !v.startsWith('sk-or-')) {
-      delete clean.openrouterApiKey;
+    if (v && v.startsWith('sk-or-')) {
+      const stored = encryptStoreOpenRouterKey(v);
+      clean.openrouterApiKey = stored.openrouterApiKey;
+      clean.openrouterApiKeyEnc = stored.openrouterApiKeyEnc;
+      clean.openrouterApiKeyHint = stored.openrouterApiKeyHint;
     } else {
-      clean.openrouterApiKey = v;
+      clean.openrouterApiKey = undefined;
+      clean.openrouterApiKeyEnc = null;
+      clean.openrouterApiKeyHint = null;
     }
   }
   if ('launchAtLogin' in clean) {
@@ -604,10 +655,10 @@ ipcMain.handle('settings:probe', () => {
   const deep = credentials.readApiKey(settings);
   const creds = {};
   creds.deepseek = deep.present
-    ? { ok: true, status: 'ok', detail: 'key found', next: '' }
-    : { ok: false, status: 'missing', detail: `no ${deep.name || 'DEEPSEEK_API_KEY'}`, next: 'Open DSH so it writes the key' };
+    ? { ok: true, status: 'ok', detail: `key found @ ${shortPath(deep.file) || '~/.dsh/.credentials.yaml'}`, next: '' }
+    : { ok: false, status: 'missing', detail: `no ${deep.name || 'DEEPSEEK_API_KEY'} @ ${shortPath(deep.file) || '~/.dsh/.credentials.yaml'}`, next: 'Open DSH so it writes the key' };
 
-  const orKey = resolveKey(settings);
+  const orKey = decryptOpenRouterKey();
   creds.openrouter = orKey
     ? { ok: true, status: 'ok', detail: 'sk-or-' + orKey.slice(-4), next: '' }
     : { ok: false, status: 'missing', detail: 'no sk-or- key', next: 'Create one at openrouter.ai/keys, paste above' };
@@ -624,7 +675,7 @@ ipcMain.handle('settings:probe', () => {
     } catch { /* ignore */ }
     creds.claude = expired
       ? { ok: false, status: 'expired', detail: 'token expired', next: 'Run "claude" once to refresh login' }
-      : { ok: true, status: 'ok', detail: 'token present', next: '' };
+      : { ok: true, status: 'ok', detail: `token present @ ${shortPath(cf)}`, next: '' };
   }
 
   const cx = path.join(home, '.codex', 'auth.json');
@@ -639,7 +690,7 @@ ipcMain.handle('settings:probe', () => {
     } catch { /* ignore */ }
     creds.codex = expired
       ? { ok: false, status: 'expired', detail: 'token expired', next: 'Run "codex login" once' }
-      : { ok: true, status: 'ok', detail: 'token present', next: '' };
+      : { ok: true, status: 'ok', detail: `token present @ ${shortPath(cx)}`, next: '' };
   }
 
   creds.antigravity = { ok: null, status: 'unknown', detail: 'Windows Credential Manager (gemini:antigravity)', next: 'Open Antigravity once if the ring is empty' };

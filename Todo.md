@@ -94,7 +94,7 @@
 
 - [x] 建立最小 i18n 層，至少支援繁體中文與英文；目前主 notch 多為英文、設定頁為繁中，語系不一致。
 - [x] 統一用語：Notch、provider／供應商、usage／用量、credit／餘額、refresh／重整、sign in／登入。
-- [ ] 所有錯誤訊息補上「發生什麼事」與「使用者下一步」，不要直接把檔案路徑或 HTTP 狀態當成完整 UX。
+- [x] 所有錯誤訊息補上「發生什麼事」與「使用者下一步」，不要直接把檔案路徑或 HTTP 狀態當成完整 UX。
 
 ## P1 — Windows 行為與系統整合
 
@@ -109,11 +109,11 @@
 
 ## P2 — Provider 與 Windows 憑證層
 
-- [ ] 將 OpenRouter API key 從明文 JSON settings 移到 Windows Credential Manager 或 DPAPI；設定檔只保存是否已設定與非敏感 metadata。
-- [ ] 憑證檔案顯示使用 `%USERPROFILE%`／Windows path，並處理 `DSH_HOME`、不同使用者帳號與檔案權限錯誤。
+- [x] 將 OpenRouter API key 從明文 JSON settings 移到 Windows Credential Manager 或 DPAPI；設定檔只保存是否已設定與非敏感 metadata。
+- [x] 憑證檔案顯示使用 `%USERPROFILE%`／Windows path，並處理 `DSH_HOME`、不同使用者帳號與檔案權限錯誤。
 - [x] YAML parser 目前只是小型 `key: value` subset；改用已驗證的 parser 或補齊 comment、quoted value、特殊字元與 multiline 的測試。
 - [ ] Antigravity transcript 不要每次把整個 `transcript.jsonl` 讀入記憶體；以檔案 offset、mtime cache 或 tail scan 降低輪詢成本。
-- [ ] `activity.js` 目前每 10 秒遞迴掃描 sessions；加入 mtime cache／watcher，避免 session 數量增加後拖慢主程序。
+- [x] `activity.js` 目前每 10 秒遞迴掃描 sessions；加入 mtime cache／watcher，避免 session 數量增加後拖慢主程序。
 - [x] 為各 provider 保存 response fixtures 與 parser contract tests；私有 endpoint 變更時要能快速知道是哪個 parser 失效。
 - [x] 顯示 provider source／fidelity 及 API 最後回應時間，讓使用者知道數字是官方值、推導值還是本機計數。
 - [x] 整理或移除未使用的 `src/balance.js`，避免 legacy DeepSeek 流程與現在的 `src/providers/deepseek.js` 造成維護混淆。

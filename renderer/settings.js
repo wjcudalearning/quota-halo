@@ -164,8 +164,11 @@ function lastFour(key) {
   return '…' + key.slice(-4);
 }
 function showLastFour() {
-  const hint = lastFour(el.orKey.value.trim());
+  const storedHint = settings && settings.openrouterApiKeyHint;
+  const typed = lastFour(el.orKey.value.trim());
+  const hint = typed || storedHint || '';
   el.orVerify.textContent = hint ? `驗證連線（${hint}）` : '驗證連線';
+  el.orHint.classList.toggle('hidden', !typed || typed.startsWith('sk-or-'));
 }
 function validateORKey() {
   const v = el.orKey.value.trim();

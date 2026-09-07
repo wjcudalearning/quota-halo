@@ -56,12 +56,14 @@ function newestSession(home) {
   return found[0];
 }
 
-/**
- * @returns { null | { active: boolean, file: string|null, lastActiveSecondsAgo: number|null } }
- *   null when there is no sessions tree at all (harness never ran / different home).
- */
-function sampleActivity(home) {
-  const top = newestSession(home);
+// mtime cache so the 10s poll doesn't recurse the whole sessions tree every
+// time. Files are re-stat'ed (cheap) between walks; a full walk only happens
+// every WALK_INTERVAL_MS or when the cache is empty / all files vanished.
+const WALK_INTERVAL_MS = 30 * 1000;
+let fileCache = new Map();
+let lastWalk = 0;
+
+function toActivity(top) {
   if (!top) return null;
   const ageMs = Date.now() - top.mtimeMs;
   return {
@@ -69,6 +71,35 @@ function sampleActivity(home) {
     file: top.file,
     lastActiveSecondsAgo: Math.max(0, Math.round(ageMs / 1000)),
   };
+}
+
+/**
+ * @returns { null | { active: boolean, file: string|null, lastActiveSecondsAgo: number|null } }
+ *   null when there is no sessions tree at all (harness never ran / different home).
+ */
+function sampleActivity(home) {
+  const now = Date.now();
+  if (fileCache.size && now - lastWalk < WALK_INTERVAL_MS) {
+    // Fast path: re-stat known files (no directory recursion).
+    let newest = null;
+    for (const [file, mtime] of fileCache) {
+      try {
+        const m = fs.statSync(file).mtimeMs;
+        if (m !== mtime) fileCache.set(file, m);
+        if (!newest || m > newest.mtimeMs) newest = { file, mtimeMs: m };
+      } catch {
+        fileCache.delete(file);
+      }
+    }
+    if (newest) return toActivity(newest);
+    // otherwise all cached files vanished → fall through to a full walk
+  }
+  const found = walkSessions(path.join(home || sessionsHome(), 'sessions'), 0, []);
+  fileCache = new Map(found.map((f) => [f.file, f.mtimeMs]));
+  lastWalk = now;
+  if (!found.length) return null;
+  found.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  return toActivity(found[0]);
 }
 
 module.exports = { sampleActivity, sessionsHome };
