@@ -135,6 +135,14 @@ test('collapsed pill selects a configured provider and maps $100 to 100%', () =>
   assert.equal(settingsStore.defaults().pillProvider, 'auto');
 });
 
+test('glass mode keeps native Acrylic disabled on the transparent shaped window', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
+  const cssSource = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'styles.css'), 'utf8');
+  assert.match(mainSource, /setBackgroundMaterial\('none'\)/);
+  assert.doesNotMatch(mainSource, /setBackgroundMaterial\(settings\.useAcrylic/);
+  assert.match(cssSource, /#full[\s\S]*?border-radius:\s*18px;[\s\S]*?contain:\s*paint;/);
+});
+
 // ---- YAML parser robustness (P2 114) ----
 test('parseCredentialsYaml: comments, inline comments, quoted spaces, empty', () => {
   const yaml = [

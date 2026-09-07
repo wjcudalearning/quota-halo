@@ -207,12 +207,14 @@ function resizeOk() {
   return true;
 }
 
-/** Windows 11 glass is optional: acrylic on a transparent shaped window is the
-    main source of compositing jank, so it defaults off (solid card = smooth). */
+/** Never apply Windows native Acrylic to this transparent, shaped window.
+    DWM paints that material across the full rectangular BrowserWindow, which
+    turns the transparent surround grey and destroys the visible corner mask.
+    The opt-in glass treatment is rendered inside the rounded CSS surfaces. */
 function applyGlass() {
   if (!win || win.isDestroyed()) return;
   try {
-    if (win.setBackgroundMaterial) win.setBackgroundMaterial(settings.useAcrylic ? 'acrylic' : 'none');
+    if (win.setBackgroundMaterial) win.setBackgroundMaterial('none');
   } catch {
     /* runtime */
   }
@@ -222,6 +224,11 @@ function applyGlass() {
     ).catch(() => {});
   } catch {
     /* not loaded yet */
+  }
+  try {
+    win.setShape([currentMode === 'card' ? cardRect() : pillRect()]);
+  } catch {
+    /* setShape unsupported */
   }
 }
 
@@ -681,7 +688,12 @@ ipcMain.on('ui:action', (event, action, arg) => {
       const snap = Math.max(CARD_H_MIN, Math.min(CARD_H_MAX, Math.round(requested / 24) * 24 + 24));
       if (snap === CARD_H || !resizeOk()) break;
       CARD_H = snap;
-      if (currentMode === 'card') placeWindow();
+      if (currentMode === 'card') {
+        placeWindow();
+        // setShape does not automatically grow with setBounds. Reapply it so
+        // a taller detail panel cannot clip off the bottom rounded corners.
+        try { win.setShape([cardRect()]); } catch { /* older Electron */ }
+      }
       break;
     }
     case 'pill-width': {

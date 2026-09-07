@@ -2,13 +2,13 @@
    色盤沿用 macOS 原版 Palette.swift：#00FF88 ample / #F2FF00 watch /
    #FF3F00 critical。與舊版的差異都標了「FIX」註解。
 
-   注意：真正的桌面模糊要靠 Windows 11 的 acrylic，請在 main.js 建立
-   BrowserWindow 時加上 backgroundMaterial: 'acrylic'（見 PATCH-main.md）。
-   沒有 acrylic 時，html.no-acrylic 會退回不透明底色，版面完全相同。 */
+   Windows 原生 Acrylic 不能安全套在透明的 shaped BrowserWindow；它會
+   填滿整個矩形視窗並破壞圓角。因此玻璃效果只在圓角元素內以穩定的
+   半透明層與高光呈現，html.no-acrylic 則退回不透明底色。 */
 
 :root {
   --bg: #000000;
-  --card: rgba(14, 16, 19, 0.55);          /* 玻璃底 */
+  --card: linear-gradient(145deg, rgba(40, 45, 52, 0.92) 0%, rgba(17, 20, 24, 0.90) 48%, rgba(8, 10, 13, 0.94) 100%);
   --card-solid: #0e1013;                   /* 無 acrylic 時的退回值 */
   --line: rgba(255, 255, 255, 0.11);
   --line-soft: rgba(255, 255, 255, 0.07);
@@ -61,8 +61,9 @@ html, body {
   padding: 0 12px 0 9px;
   border-radius: 16px;
   background: var(--card);
-  backdrop-filter: blur(28px) saturate(1.35);
   box-shadow: var(--shadow), inset 0 0 0 1px var(--line), inset 0 1px 0 var(--hi);
+  overflow: hidden;
+  contain: paint;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,9 +110,9 @@ html, body {
   position: absolute;
   inset: 0 0 auto 0;                        /* 高度由內容決定 */
   background: var(--card);
-  backdrop-filter: blur(34px) saturate(1.35);
   border-radius: 18px;
   overflow: hidden;
+  contain: paint;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow), inset 0 0 0 1px var(--line), inset 0 1px 0 var(--hi);
@@ -124,7 +125,7 @@ html, body {
 }
 
 html.no-acrylic #full,
-html.no-acrylic #mini { background: var(--card-solid); backdrop-filter: none; }
+html.no-acrylic #mini { background: var(--card-solid); }
 
 #notch.pill-mode #full { opacity: 0; pointer-events: none; transform: translateY(-8px) scale(0.985); }
 #notch.pill-mode #mini { opacity: 1; }

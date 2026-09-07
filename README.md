@@ -12,15 +12,17 @@ Quota Halo 會把 DeepSeek、OpenRouter、Claude、Codex 與 Antigravity 的額�
 
 ## 下載
 
-目前版本：**v0.3.4**
+目前版本：**v0.3.5**
 
-- [下載 Quota Halo v0.3.4（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.4/Quota-Halo-v0.3.4-win-x64.zip)
+- [下載 Quota Halo v0.3.5（Windows x64）](https://github.com/wjcudalearning/quota-halo/releases/download/v0.3.5/Quota-Halo-v0.3.5-win-x64.zip)
 - [查看所有 Releases](https://github.com/wjcudalearning/quota-halo/releases)
 
 解壓縮後執行 `Quota Halo.exe` 即可，不需要安裝。系統需求為 Windows 10/11 x64。
 
-### v0.3.4 重點
+### v0.3.5 重點
 
+- 玻璃質感改為穩定的卡片內渲染，不再讓 Windows Acrylic 填滿透明視窗
+- 動態高度改變後重新套用視窗形狀，避免底部圓角遭到裁切
 - 可在設定中指定收合膠囊唯一顯示的供應商
 - DeepSeek、OpenRouter 等金額型讀值以 US$100 = 100% 繪製膠囊比例
 - OpenRouter 直接沿用 DeepSeek Harness／DSH 的 `OPENROUTER_API_KEY`
@@ -131,6 +133,7 @@ dist/Quota Halo-win32-x64/Quota Halo.exe
 - 個人 Google 帳號通常無法取得 Antigravity 官方配額，程式會改用本機活動紀錄估算今日請求數。
 - 部分供應商回傳的欄位名稱仍會以英文顯示。
 - 全螢幕應用程式不會自動隱藏 Quota Halo；可在設定中把置頂層級切換成「一般」。
+- 「玻璃質感背景」使用卡片內的半透明漸層與高光；刻意不使用 Windows 原生 Acrylic，避免透明區域變灰與圓角失效。
 
 ## 授權
 

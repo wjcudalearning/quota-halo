@@ -284,7 +284,7 @@ el.pinned.addEventListener('change', async () => {
 });
 el.glass.addEventListener('change', async () => {
   await apply({ useAcrylic: el.glass.checked });
-  flash(el.glass.checked ? '已開啟玻璃背景（較耗資源）' : '已改用實色卡片（較流暢）');
+  flash(el.glass.checked ? '已開啟玻璃質感背景' : '已改用實色卡片');
 });
 el.seconds.addEventListener('change', async () => {
   const v = Math.max(10, Math.min(3600, Number(el.seconds.value) || 60));
