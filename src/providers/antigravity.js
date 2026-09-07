@@ -173,8 +173,12 @@ async function fetchSnapshot(_settings, signal) {
       // bridgeWindows returned after first answer; if it threw, catch below.
       if (windows.length) {
         // The notch shows what the app's own Models & Usage panel leads with:
-        // REMAINING, not spent. So headline/arc use remainingFraction.
-        const headline = windows[0];
+        // REMAINING, not spent. Headline = the most-constrained window (the
+        // one with the least remaining), not a fixed index.
+        const headline = windows.reduce((a, b) => (
+          (typeof b.remainingFraction === 'number' ? b.remainingFraction : 1 - b.usedFraction) <
+          (typeof a.remainingFraction === 'number' ? a.remainingFraction : 1 - a.usedFraction) ? b : a
+        ), windows[0]);
         const rem = typeof headline.remainingFraction === 'number' ? headline.remainingFraction : 1 - headline.usedFraction;
         return {
           ...b,
@@ -193,6 +197,12 @@ async function fetchSnapshot(_settings, signal) {
               v: `${Math.round(r * 100)}% left${w.resetsAtMs ? ` \u00b7 resets ${new Date(w.resetsAtMs).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}`,
             };
           }),
+          windows: windows.map((w) => ({
+            label: w.label,
+            usedFraction: typeof w.remainingFraction === 'number' ? w.remainingFraction : 1 - w.usedFraction,
+            kind: 'left',
+            resetsAtMs: w.resetsAtMs || null,
+          })),
           updatedAt: new Date().toISOString(),
         };
       }
@@ -270,6 +280,7 @@ async function fetchSnapshot(_settings, signal) {
       badge: 'OK',
       caption: 'USED',
       rows: windows.map((w) => ({ k: w.label, v: `${Math.round(w.usedFraction * 100)}% used` })),
+      windows: windows.map((w) => ({ label: w.label, usedFraction: w.usedFraction, kind: 'used', resetsAtMs: w.resetsAtMs || null })),
       tier,
       updatedAt: new Date().toISOString(),
     };

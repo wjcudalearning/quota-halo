@@ -34,6 +34,7 @@ function normalize(p, r) {
     badge: r.badge || (r.state === 'ok' ? 'OK' : r.state.toUpperCase()),
     caption: r.caption || '',
     rows: Array.isArray(r.rows) ? r.rows : [],
+    windows: Array.isArray(r.windows) ? r.windows : [],
     plan: r.plan,
     tier: r.tier,
     derived: !!r.derived,

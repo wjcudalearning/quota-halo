@@ -14,7 +14,7 @@ const providers = require('./providers');
 // The window holds the whole card; win.setShape narrows the OS hit region to
 // the collapsed pill, so the transparent surround never blocks the desktop.
 const PILL_H = 34;
-const CARD_H = 190;
+const CARD_H = 240;
 const CELL_W = 88;   // per-provider cell width in the expanded card
 const EDGE_GAP = 6;
 
@@ -699,7 +699,15 @@ async function runDebugChecks() {
         mode: document.getElementById('notch')?.className,
         pillText: document.getElementById('miniText')?.textContent,
         cells,
-        footer: document.getElementById('detailText')?.textContent.trim(),
+        dpName: document.getElementById('dpName')?.textContent.trim(),
+        dpFid: document.getElementById('dpFid')?.textContent.trim(),
+        dpUpd: document.getElementById('dpUpd')?.textContent.trim(),
+        dpRows: [...document.querySelectorAll('.dp-window')].map(r => ({
+          label: r.querySelector('.w-label')?.textContent.trim(),
+          val: r.querySelector('.w-val')?.textContent.trim(),
+          reset: r.querySelector('.w-reset')?.textContent.trim(),
+          fill: r.querySelector('.w-fill')?.style.width,
+        })),
         body: { w: document.body.offsetWidth, h: document.body.offsetHeight },
       };
     })()`);

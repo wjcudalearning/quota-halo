@@ -14,7 +14,12 @@ const titleSub = $('titleSub');
 const cellsEl = $('cells');
 const activityDot = $('actDot');
 const activityText = $('activityText');
-const detailText = $('detailText');
+const dpGlyph = $('dpGlyph');
+const dpName = $('dpName');
+const dpPlan = $('dpPlan');
+const dpFid = $('dpFid');
+const dpUpd = $('dpUpd');
+const dpRows = $('dpRows');
 const btnPin = $('btnPin');
 
 const R = { cell: 30, mini: 8.5 };
@@ -86,6 +91,15 @@ function heroOf(providers) {
 
 /* ------------------------------------------------------------ rendering -- */
 
+function currentPick() {
+  const providers = state.payload ? state.payload.providers : [];
+  if (state.hovered) {
+    const found = providers.find((x) => x.id === state.hovered);
+    if (found) return found;
+  }
+  return heroOf(providers);
+}
+
 function ensureCell(p) {
   let cell = state.cellEls.get(p.id);
   if (cell) return cell;
@@ -109,7 +123,13 @@ function ensureCell(p) {
   cell.addEventListener('mouseenter', () => {
     clearTimeout(state.collapseTimer);
     state.hovered = p.id;
-    showDetail();
+    cellsEl.classList.add('has-hover');
+    showDetail(currentPick());
+  });
+  cell.addEventListener('mouseleave', () => {
+    state.hovered = null;
+    cellsEl.classList.remove('has-hover');
+    showDetail(currentPick());
   });
   cell.addEventListener('click', () => {
     const cur = state.payload && state.payload.providers.find((x) => x.id === p.id);
@@ -155,28 +175,101 @@ function timeAgo(iso) {
   return `${Math.round(s / 86400)}d ago`;
 }
 
-function showDetail() {
-  const providers = state.payload ? state.payload.providers : [];
-  const targetId = state.hovered;
-  const p = targetId ? providers.find((x) => x.id === targetId) : null;
-  const pick = p || heroOf(providers);
+function fmtReset(resetsAtMs) {
+  if (!resetsAtMs) return '';
+  const delta = resetsAtMs - Date.now();
+  const d = new Date(resetsAtMs);
+  if (delta < 3600000) {
+    // under an hour → relative
+    if (delta <= 0) return 'resetting now';
+    return `resets in ${Math.ceil(delta / 60000)}m`;
+  }
+  return `resets ${d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function barColor(p, kind) {
+  const frac = p.fraction != null ? p.fraction : null;
+  if (kind === 'left') {
+    // remaining: low remaining is bad
+    const r = p.headlineRaw != null ? p.headlineRaw : null;
+    if (r != null && r <= 0.2) return 'var(--orange)';
+    if (r != null && r <= 0.5) return 'var(--yellow)';
+    return 'var(--green)';
+  }
+  if (frac == null) return 'var(--green)';
+  if (frac >= 0.95) return 'var(--orange)';
+  if (frac >= 0.8) return 'var(--yellow)';
+  return 'var(--green)';
+}
+
+function showDetail(pick) {
   if (!pick) {
-    detailText.textContent = '';
+    dpRows.textContent = '';
     return;
   }
-  const parts = [];
   const disp = pick.stale && pick.staleOf ? pick.staleOf : pick;
-  if (disp.plan && disp.plan !== 'Personal') parts.push(disp.plan);
-  if (disp.tier) parts.push(disp.tier);
-  if (disp.derived) parts.push('~ counted locally');
-  if (pick.state !== 'ok') {
-    if (pick.stale && pick.staleOf) parts.push(`stale — last good ${timeAgo(pick.staleOf.updatedAt)}`);
-    parts.push(pick.message || pick.state);
+  dpGlyph.textContent = disp.glyph || pick.id.slice(0, 2);
+  dpName.textContent = pick.name;
+  dpPlan.textContent = (disp.plan && disp.plan !== 'Personal' ? disp.plan : '') || '';
+  dpFid.textContent = pick.state !== 'ok'
+    ? (pick.stale ? 'stale' : pick.state)
+    : (disp.fidelity === 'official' ? 'official' : disp.fidelity === 'derived' ? '~ derived' : disp.fidelity || '');
+  dpUpd.textContent = pick.state !== 'ok'
+    ? (pick.stale && pick.staleOf && pick.staleOf.updatedAt ? `last good ${timeAgo(pick.staleOf.updatedAt)}` : pick.message || pick.state)
+    : (disp.updatedAt ? `updated ${timeAgo(disp.updatedAt)}` : '');
+  dpPlan.style.display = dpPlan.textContent ? '' : 'none';
+  dpFid.style.setProperty('--ring-color', stateColor(pick));
+
+  dpRows.textContent = '';
+  const windows = Array.isArray(disp.windows) ? disp.windows : [];
+  if (pick.state === 'ok' && windows.length) {
+    for (const w of windows) {
+      const f = Math.max(0, Math.min(1, Number(w.usedFraction) || 0));
+      const row = document.createElement('div');
+      row.className = 'dp-window';
+      const label = document.createElement('span');
+      label.className = 'w-label';
+      label.textContent = w.label;
+      const bar = document.createElement('div');
+      bar.className = 'w-bar';
+      const fill = document.createElement('div');
+      fill.className = 'w-fill';
+      fill.style.width = `${Math.round(f * 100)}%`;
+      fill.style.background = barColor(pick, w.kind);
+      bar.appendChild(fill);
+      const val = document.createElement('span');
+      val.className = 'w-val';
+      val.textContent = `${Math.round(f * 100)}%`;
+      const reset = document.createElement('span');
+      reset.className = 'w-reset';
+      reset.textContent = fmtReset(w.resetsAtMs);
+      row.append(label, bar, val, reset);
+      dpRows.appendChild(row);
+    }
   } else {
-    const rows = (disp.rows || []).slice(0, 3);
-    parts.push(...rows.map((r) => `${r.k} ${r.v}`));
+    // money providers (no notion of windows) or empty/error/needsAuth
+    for (const r of (disp.rows || [])) {
+      const line = document.createElement('div');
+      line.className = 'dp-msg';
+      const k = document.createElement('span');
+      k.textContent = r.k;
+      const v = document.createElement('span');
+      v.textContent = r.v ? (r.k ? '：' + r.v : r.v) : '';
+      line.append(k, v);
+      if (r.cta) {
+        line.classList.add('cta');
+        line.title = 'Open settings';
+        line.addEventListener('click', () => window.codenotch.action('settings'));
+      }
+      dpRows.appendChild(line);
+    }
+    if (!(disp.rows || []).length) {
+      const msg = document.createElement('div');
+      msg.className = 'dp-msg';
+      msg.textContent = pick.state !== 'ok' ? (pick.message || pick.state) : 'No reading yet';
+      dpRows.appendChild(msg);
+    }
   }
-  detailText.textContent = parts.join(' \u00b7 ');
 }
 
 function renderTitle(payload) {
@@ -258,7 +351,7 @@ function render(payload) {
   renderMini(payload.providers);
   renderTitle(payload);
   renderActivity(payload.activity);
-  showDetail();
+  showDetail(currentPick());
 }
 
 /* --------------------------------------------------------------- modes --- */

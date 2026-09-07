@@ -111,7 +111,8 @@ async function fetchSnapshot(_settings, signal) {
   if (!windows.length) {
     return { ...b, state: 'error', headline: '\u2014', badge: 'EMPTY', rows: [{ k: 'No windows', v: 'no usage reported' }], message: 'Codex reported no usage windows' };
   }
-  const headline = windows[0];
+  // Headline = the most-constrained window (highest used), not a fixed index.
+  const headline = windows.reduce((a, b) => (b.usedFraction > a.usedFraction ? b : a), windows[0]);
   const frac = headline.usedFraction;
   const level = levelFor(frac);
   const rows = windows.map((w) => ({
@@ -128,6 +129,12 @@ async function fetchSnapshot(_settings, signal) {
     badge: level === 'crit' ? 'CRIT' : level === 'low' ? 'LOW' : 'OK',
     caption: 'USED',
     rows,
+    windows: windows.map((w) => ({
+      label: w.label,
+      usedFraction: w.usedFraction,
+      kind: 'used',
+      resetsAtMs: w.resetsAtMs || null,
+    })),
     updatedAt: new Date().toISOString(),
   };
 }

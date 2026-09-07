@@ -158,7 +158,7 @@ async function fetchSnapshot(_settings, signal) {
     const rk = (w) => (w.id === 'session' ? 0 : w.id === 'weekly_all' ? 1 : 2);
     return rk(x) - rk(y) || x.id.localeCompare(y.id);
   });
-  const headline = windows.find((w) => w.id === 'session') || windows[0];
+  const headline = windows.reduce((a, b) => (b.usedFraction > a.usedFraction ? b : a), windows[0]);
   const frac = headline.usedFraction;
   const level = levelFor(frac);
   const rows = windows.map((w) => {
@@ -175,6 +175,12 @@ async function fetchSnapshot(_settings, signal) {
     badge: level === 'crit' ? 'CRIT' : level === 'low' ? 'LOW' : 'OK',
     caption: 'USED',
     rows,
+    windows: windows.map((w) => ({
+      label: w.label,
+      usedFraction: w.usedFraction,
+      kind: 'used',
+      resetsAtMs: w.resetsAtMs || null,
+    })),
     plan: cred.plan || undefined,
     updatedAt: new Date().toISOString(),
   };

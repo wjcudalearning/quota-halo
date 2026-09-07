@@ -62,12 +62,12 @@
 
 ### 展開卡片與詳細資訊
 
-- [ ] 參照上游設計，把目前 footer 的單行字串升級為真正的 detail panel／tooltip：provider glyph、名稱、方案、每個 limit window、進度 bar、reset 倒數。
-- [ ] hover 某個 provider 時只突出該 provider，其餘卡片降低對比；加入對準該 cell 的小 tail，讓使用者知道詳細資料屬於誰。
-- [ ] 每個 limit window 使用獨立的 4–6px progress bar，顯示 `N% used` 或 `N% left`，並在一小時內用相對時間、較長時間用絕對日期。
-- [ ] 將最受限的 window 作為 provider headline，而不是固定取第一個正常 provider；DeepSeek／OpenRouter 的金額則用 money-specific layout，不要偽裝成百分比 ring。
-- [ ] 卡片標題加入「last updated」與資料可信度（official／derived／manual）；derived 數值要明顯但不干擾閱讀地標示 `~`。
-- [ ] 為卡片加入 empty state、loading skeleton、error retry、認證操作提示，避免網路請求期間畫面只剩 dash。
+- [x] 參照上游設計，把目前 footer 的單行字串升級為真正的 detail panel／tooltip：provider glyph、名稱、方案、每個 limit window、進度 bar、reset 倒數。
+- [x] hover 某個 provider 時只突出該 provider，其餘卡片降低對比；加入對準該 cell 的小 tail，讓使用者知道詳細資料屬於誰。
+- [x] 每個 limit window 使用獨立的 4–6px progress bar，顯示 `N% used` 或 `N% left`，並在一小時內用相對時間、較長時間用絕對日期。
+- [x] 將最受限的 window 作為 provider headline，而不是固定取第一個正常 provider；DeepSeek／OpenRouter 的金額則用 money-specific layout，不要偽裝成百分比 ring。
+- [x] 卡片標題加入「last updated」與資料可信度（official／derived／manual）；derived 數值要明顯但不干擾閱讀地標示 `~`。
+- [x] 為卡片加入 empty state、loading skeleton、error retry、認證操作提示，避免網路請求期間畫面只剩 dash。
 - [x] 加入右鍵選單：Refresh、Settings、Pin、Hide temporarily、Quit；目前主要互動在 tray，notch 本身不夠完整。
 
 ### 顏色、字體與 icon
