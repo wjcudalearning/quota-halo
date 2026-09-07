@@ -25,7 +25,7 @@
   --red: #ff8a6b;
   --accent: var(--green);                  /* FIX 舊版從未定義 --accent */
   --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  --shadow: 0 26px 60px rgba(0, 0, 0, 0.55);
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.16);   /* 極小深度；大外陰影在透明視窗上會形成殘影 */
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 

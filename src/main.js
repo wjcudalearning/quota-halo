@@ -247,7 +247,8 @@ function scheduleStatePersist() {
 
 function buildPayload(results, act) {
   const out = providers.applyStale(results, providerCache);
-  if (results.some((r) => r.state === 'ok')) scheduleStatePersist();
+  // Never persist fixture/screenshot test values into the real last-state.json.
+  if (!process.env.CODENOTCH_FIXTURE && results.some((r) => r.state === 'ok')) scheduleStatePersist();
   return {
     providers: out,
     activity: act,
