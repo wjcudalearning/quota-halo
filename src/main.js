@@ -591,15 +591,70 @@ ipcMain.handle('settings:set', (_e, patch) => {
   return { ...settings };
 });
 ipcMain.handle('settings:probe', () => {
-  const out = {};
-  const deep = credentials.readApiKey(settings);
-  out.deepseek = { found: deep.present, file: deep.file || '', name: deep.name };
+  const { jwtClaims } = require('./providers/helpers');
   const { resolveKey } = require('./providers/openrouter');
-  out.openrouter = { found: !!resolveKey(settings), source: resolveKey(settings) ? 'configured' : 'none' };
-  out.claude = { found: fs.existsSync(path.join(process.env.USERPROFILE || os.homedir(), '.claude', '.credentials.json')) };
-  out.codex = { found: fs.existsSync(path.join(process.env.USERPROFILE || os.homedir(), '.codex', 'auth.json')) };
-  out.antigravity = { found: null, via: 'Windows Credential Manager (gemini:antigravity) — read at each poll' };
-  return out;
+  const home = process.env.USERPROFILE || os.homedir();
+
+  const deep = credentials.readApiKey(settings);
+  const creds = {};
+  creds.deepseek = deep.present
+    ? { ok: true, status: 'ok', detail: 'key found', next: '' }
+    : { ok: false, status: 'missing', detail: `no ${deep.name || 'DEEPSEEK_API_KEY'}`, next: 'Open DSH so it writes the key' };
+
+  const orKey = resolveKey(settings);
+  creds.openrouter = orKey
+    ? { ok: true, status: 'ok', detail: 'sk-or-' + orKey.slice(-4), next: '' }
+    : { ok: false, status: 'missing', detail: 'no sk-or- key', next: 'Create one at openrouter.ai/keys, paste above' };
+
+  const cf = path.join(home, '.claude', '.credentials.json');
+  if (!fs.existsSync(cf)) {
+    creds.claude = { ok: false, status: 'missing', detail: 'no ~/.claude/.credentials.json', next: 'Run "claude" once to sign in' };
+  } else {
+    let expired = null;
+    try {
+      const j = JSON.parse(fs.readFileSync(cf, 'utf8'));
+      const ms = Number(j.claudeAiOauth && j.claudeAiOauth.expiresAt);
+      if (ms) expired = ms <= Date.now();
+    } catch { /* ignore */ }
+    creds.claude = expired
+      ? { ok: false, status: 'expired', detail: 'token expired', next: 'Run "claude" once to refresh login' }
+      : { ok: true, status: 'ok', detail: 'token present', next: '' };
+  }
+
+  const cx = path.join(home, '.codex', 'auth.json');
+  if (!fs.existsSync(cx)) {
+    creds.codex = { ok: false, status: 'missing', detail: 'no ~/.codex/auth.json', next: 'Run "codex login" once' };
+  } else {
+    let expired = false;
+    try {
+      const j = JSON.parse(fs.readFileSync(cx, 'utf8'));
+      const claims = jwtClaims(j.tokens && j.tokens.access_token);
+      expired = !!(claims && claims.exp && claims.exp <= Date.now() / 1000);
+    } catch { /* ignore */ }
+    creds.codex = expired
+      ? { ok: false, status: 'expired', detail: 'token expired', next: 'Run "codex login" once' }
+      : { ok: true, status: 'ok', detail: 'token present', next: '' };
+  }
+
+  creds.antigravity = { ok: null, status: 'unknown', detail: 'Windows Credential Manager (gemini:antigravity)', next: 'Open Antigravity once if the ring is empty' };
+
+  // Live provider status that the settings provider-rows surface.
+  const liveProviders = lastPayload && lastPayload.providers
+    ? lastPayload.providers.map((p) => ({ id: p.id, name: p.name, glyph: p.glyph, state: p.state, headline: p.headline, badge: p.badge, level: p.level }))
+    : [];
+
+  // Reflect the *actual* Windows login-item state (may be blocked by policy).
+  let login = { requested: !!settings.launchAtLogin };
+  try {
+    const li = app.getLoginItemSettings({ path: process.execPath });
+    login.actual = !!(li && li.openAtLogin);
+    login.blocked = login.requested && !login.actual;
+  } catch {
+    login.actual = null;
+    login.blocked = false;
+  }
+
+  return { creds, providers: liveProviders, login };
 });
 ipcMain.handle('settings:pickCredentials', async () => {
   const res = await dialog.showOpenDialog({

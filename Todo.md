@@ -82,10 +82,10 @@
 ### Settings 視窗
 
 - [x] 將目前長頁面改成更清楚的分組：Providers、Credentials、Appearance、Polling、About；保留單頁也可以，但每組要有說明與視覺 hierarchy。
-- [ ] provider row 加上品牌 glyph、目前狀態、最後讀取結果與 toggle switch；目前只有原生 checkbox 和描述文字。
+- [x] provider row 加上品牌 glyph、目前狀態、最後讀取結果與 toggle switch；目前只有原生 checkbox 和描述文字。
 - [ ] 若要支援自訂順序，加入 drag handle、鍵盤排序與顯示順序預覽；若暫時不支援，明確標示 order is fixed。
 - [x] OpenRouter key 加上顯示／隱藏、清除、驗證連線與最後四碼提示；不要要求使用者只能靠改字串觸發儲存。
-- [ ] 憑證探測改成可操作的 status cards：找到檔案、缺少 key、token expired、無法讀取，各自提供下一步。
+- [x] 憑證探測改成可操作的 status cards：找到檔案、缺少 key、token expired、無法讀取，各自提供下一步。
 - [ ] 調整設定頁固定高度與小字密度，支援 Windows 縮放 125%／150% 及較長的繁體中文說明。
 - [x] 支援 `Esc` 關閉設定、Tab 順序、Enter／Space 操作、screen reader label 與可見 focus ring。
 - [x] 加入「恢復預設值」與「清除本機設定」；執行清除前要有明確確認與範圍說明。
@@ -103,8 +103,8 @@
 - [ ] 評估是否支援 left／right edge；若 Windows 版只保留 top／bottom，要在 Settings 與 README 清楚說明產品取捨。
 - [ ] 實測 Windows taskbar 自動隱藏、不同 taskbar 位置、全螢幕 app、Windows snap 與多種 scaling，確認 notch 不會遮住重要內容。
 - [x] 評估 `screen-saver` always-on-top 層級；避免 overlay 在遊戲、簡報或全螢幕工作時過度干擾，提供 auto-hide／fullscreen hide 選項。
-- [ ] 讓 tray menu 與 notch actions 共用同一套狀態，包含 show／hide、pin、refresh、settings、quit。
-- [ ] 啟用「登入時啟動」後回讀 Windows login item 狀態；若被群組政策或系統阻擋，要在 Settings 顯示原因。
+- [x] 讓 tray menu 與 notch actions 共用同一套狀態，包含 show／hide、pin、refresh、settings、quit。
+- [x] 啟用「登入時啟動」後回讀 Windows login item 狀態；若被群組政策或系統阻擋，要在 Settings 顯示原因。
 - [ ] 補上 Windows 通知選項：token expired、provider recovered、critical quota 只在狀態真正變更時通知，避免每輪 poll 打擾。
 
 ## P2 — Provider 與 Windows 憑證層

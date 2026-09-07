@@ -39,6 +39,7 @@ const el = {
 };
 
 let settings = {};
+let probeData = { creds: {}, providers: [], login: {} };
 let flashTimer = null;
 let orDebounce = null;
 function flash(msg) {
@@ -51,21 +52,40 @@ function flash(msg) {
   }, 2000);
 }
 
+const NAMES = { deepseek: 'DeepSeek', openrouter: 'OpenRouter', claude: 'Claude', codex: 'Codex', antigravity: 'Antigravity' };
+const CRED_ORDER = ['deepseek', 'openrouter', 'claude', 'codex', 'antigravity'];
+
 async function apply(patch) {
   await window.codenotch.setSettings(patch);
   settings = { ...settings, ...patch };
   showLastFour();
 }
 
+function providerLive(id) {
+  return probeData.providers.find((p) => p.id === id) || null;
+}
+function stateLabel(state) {
+  switch (state) {
+    case 'ok': return 'normal';
+    case 'expired': return '過期';
+    case 'needsAuth': return '登入';
+    case 'rateLimited': return '限流';
+    case 'error': return '錯誤';
+    default: return state || '';
+  }
+}
+
 function renderProviders() {
   el.providerList.textContent = '';
   const flags = settings.providers || {};
   for (const meta of PROVIDER_META) {
+    const on = flags[meta.id] !== false;
+    const live = providerLive(meta.id);
     const row = document.createElement('div');
     row.className = 'provider-row';
-    const on = flags[meta.id] !== false;
-    const check = document.createElement('label');
-    check.className = 'check';
+
+    const sw = document.createElement('label');
+    sw.className = 'switch';
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = on;
@@ -73,53 +93,58 @@ function renderProviders() {
       await apply({ providers: { [meta.id]: cb.checked } });
       flash(cb.checked ? `已顯示 ${meta.name}` : `已隱藏 ${meta.name}`);
     });
-    const box = document.createElement('span');
-    box.className = 'p-name';
-    box.textContent = meta.name;
-    const desc = document.createElement('span');
+    const slider = document.createElement('span');
+    slider.className = 'switch-slider';
+    sw.append(cb, slider);
+
+    const body = document.createElement('div');
+    body.className = 'p-body';
+    const nameRow = document.createElement('div');
+    nameRow.className = 'p-name-row';
+    const glyph = document.createElement('span');
+    glyph.className = 'p-glyph';
+    glyph.textContent = live && live.glyph ? live.glyph : meta.id.slice(0, 2);
+    const name = document.createElement('span');
+    name.className = 'p-name';
+    name.textContent = meta.name;
+    const st = document.createElement('span');
+    st.className = 'p-state ' + (live ? (live.state === 'ok' ? 'ok' : 'bad') : '');
+    st.textContent = live ? (live.state === 'ok' ? live.headline : stateLabel(live.state)) : meta.desc;
+    nameRow.append(glyph, name, st);
+    const desc = document.createElement('div');
     desc.className = 'p-desc';
     desc.textContent = meta.desc;
-    check.append(cb, box);
-    row.append(check, desc);
+    body.append(nameRow, desc);
+
+    row.append(sw, body);
     el.providerList.appendChild(row);
   }
 }
 
-function lastFour(key) {
-  if (!key || !key.startsWith('sk-or-')) return '';
-  return '…' + key.slice(-4);
-}
-function showLastFour() {
-  const hint = lastFour(el.orKey.value.trim());
-  el.orVerify.textContent = hint ? `驗證連線（${hint}）` : '驗證連線';
-}
-
-function validateORKey() {
-  const v = el.orKey.value.trim();
-  el.orHint.classList.toggle('hidden', !v || v.startsWith('sk-or-'));
-  showLastFour();
-}
-
-function saveORKey(instant) {
-  clearTimeout(orDebounce);
-  const doSave = async () => {
-    await apply({ openrouterApiKey: el.orKey.value.trim() || '' });
-    flash('OpenRouter 金鑰已存到本機設定');
-  };
-  if (instant) doSave();
-  else orDebounce = setTimeout(doSave, 350);
-}
-
-async function probe() {
-  const res = await window.codenotch.probeCredentials();
+function renderCreds() {
   const lines = [];
-  const file = (p) => (res[p] && res[p].file ? ` @ ${res[p].file}` : '');
-  lines.push(`DeepSeek：${res.deepseek && res.deepseek.found ? '已找到金鑰' : '尚無金鑰'}${file('deepseek')}`);
-  lines.push(`OpenRouter：${res.openrouter && res.openrouter.found ? '已設定金鑰' : '沒有金鑰 — 請在上方新增'}`);
-  lines.push(`Claude：${res.claude && res.claude.found ? '~/.claude/.credentials.json 存在' : '尚未登入'}`);
-  lines.push(`Codex：${res.codex && res.codex.found ? '~/.codex/auth.json 存在' : '尚未登入'}`);
-  lines.push('Antigravity：每次輪詢時從 Windows 認證管理員讀取');
-  el.probe.innerHTML = lines.map((l) => `<div>${l}</div>`).join('');
+  for (const id of CRED_ORDER) {
+    const c = probeData.creds[id];
+    if (!c) continue;
+    const cls = c.ok === true ? 'ok' : c.ok === false ? 'bad' : '';
+    const title = c.ok === true ? '\u2713' : c.ok === false ? '\u2717' : '\u25cf';
+    const name = NAMES[id] || id;
+    const next = c.next ? ` · ${c.next}` : '';
+    lines.push(`<div class="probe-row ${cls}"><span class="probe-mark">${title}</span><span class="probe-text"><b>${name}</b> — ${c.detail}${next}</span></div>`);
+  }
+  const lg = probeData.login;
+  if (lg && lg.blocked) {
+    lines.push('<div class="probe-row bad"><span class="probe-mark">!</span><span class="probe-text"><b>登入啟動</b> — 已啟用但 Windows 未實際設定（可能被群組原則或系統阻擋）</span></div>');
+  } else if (lg && lg.actual) {
+    lines.push('<div class="probe-row ok"><span class="probe-mark">\u2713</span><span class="probe-text"><b>登入啟動</b> — 已生效</span></div>');
+  }
+  el.probe.innerHTML = lines.join('');
+}
+
+async function refreshProbe() {
+  probeData = await window.codenotch.probeCredentials();
+  renderProviders();
+  renderCreds();
 }
 
 function applyLocale() {
@@ -134,6 +159,30 @@ function applyLocale() {
   });
 }
 
+function lastFour(key) {
+  if (!key || !key.startsWith('sk-or-')) return '';
+  return '…' + key.slice(-4);
+}
+function showLastFour() {
+  const hint = lastFour(el.orKey.value.trim());
+  el.orVerify.textContent = hint ? `驗證連線（${hint}）` : '驗證連線';
+}
+function validateORKey() {
+  const v = el.orKey.value.trim();
+  el.orHint.classList.toggle('hidden', !v || v.startsWith('sk-or-'));
+  showLastFour();
+}
+function saveORKey(instant) {
+  clearTimeout(orDebounce);
+  const doSave = async () => {
+    await apply({ openrouterApiKey: el.orKey.value.trim() || '' });
+    flash('OpenRouter 金鑰已存到本機設定');
+    await refreshProbe();
+  };
+  if (instant) doSave();
+  else orDebounce = setTimeout(doSave, 350);
+}
+
 async function init() {
   const s = await window.codenotch.getSettings();
   settings = s;
@@ -142,7 +191,6 @@ async function init() {
   el.inOverlay.value = s.overlayLevel === 'normal' ? 'normal' : 'screen-saver';
   applyLocale();
   el.appVersion.textContent = 'v0.3.0';
-  renderProviders();
   el.orKey.value = s.openrouterApiKey || '';
   validateORKey();
   el.credentials.value = s.credentialsPath || '';
@@ -152,7 +200,7 @@ async function init() {
   el.pinned.checked = !!s.pinned;
   el.launch.checked = !!s.launchAtLogin;
   syncEdge(s.edge);
-  await probe();
+  await refreshProbe();
 }
 
 function syncEdge(edge) {
@@ -176,10 +224,12 @@ el.orClear.addEventListener('click', async () => {
   validateORKey();
   await apply({ openrouterApiKey: '' });
   flash('OpenRouter 金鑰已清除');
+  await refreshProbe();
 });
 el.credentials.addEventListener('change', async () => {
   await apply({ credentialsPath: el.credentials.value.trim() });
   flash('憑證路徑已更新');
+  await refreshProbe();
 });
 el.browse.addEventListener('click', async () => {
   const picked = await window.codenotch.pickCredentials();
@@ -187,11 +237,13 @@ el.browse.addEventListener('click', async () => {
     el.credentials.value = picked;
     await apply({ credentialsPath: picked });
     flash('憑證路徑已更新');
+    await refreshProbe();
   }
 });
 el.keyName.addEventListener('change', async () => {
   await apply({ keyName: el.keyName.value.trim() || 'DEEPSEEK_API_KEY' });
   flash('金鑰名稱已更新');
+  await refreshProbe();
 });
 el.segEdge.addEventListener('click', async (e) => {
   const b = e.target.closest('.seg-btn');
@@ -224,6 +276,7 @@ el.seconds.addEventListener('change', async () => {
 el.launch.addEventListener('change', async () => {
   await apply({ launchAtLogin: el.launch.checked });
   flash(el.launch.checked ? '登入時將自動啟動' : '不再於登入時啟動');
+  await refreshProbe();
 });
 el.test.addEventListener('click', () => {
   window.codenotch.action('refresh');
@@ -231,27 +284,25 @@ el.test.addEventListener('click', () => {
 });
 el.reset.addEventListener('click', async () => {
   if (!confirm('確認恢復預設值？會將螢幕邊緣、輪詢、釘住、語言等回復預設（不會動憑證）。')) return;
-  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '' });
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', overlayLevel: 'screen-saver', locale: 'zh-TW' });
   settings = await window.codenotch.getSettings();
   el.orKey.value = ''; validateORKey();
   el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
+  el.inOverlay.value = 'screen-saver'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
   flash('已恢復預設值');
 });
 el.clear.addEventListener('click', async () => {
   if (!confirm('確認清除本機設定與最後讀值快取？此動作無法復原。')) return;
-  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', credentialsPath: '', keyName: 'DEEPSEEK_API_KEY', providers: {}, notchPos: null });
+  await window.codenotch.setSettings({ refreshSeconds: 60, edge: 'top', pinned: false, launchAtLogin: false, openrouterApiKey: '', credentialsPath: '', keyName: 'DEEPSEEK_API_KEY', providers: {}, notchPos: null, overlayLevel: 'screen-saver', locale: 'zh-TW' });
   settings = await window.codenotch.getSettings();
   el.orKey.value = ''; validateORKey(); el.credentials.value = ''; el.keyName.value = 'DEEPSEEK_API_KEY';
   el.seconds.value = '60'; el.pinned.checked = false; el.launch.checked = false; syncEdge('top');
-  renderProviders();
+  el.inOverlay.value = 'screen-saver'; el.inLocale.value = 'zh-TW'; window.I18N.setLocale('zh-TW'); applyLocale();
+  await refreshProbe();
   flash('已清除本機設定');
 });
-el.close.addEventListener('click', () => {
-  saveORKey(true);
-  window.codenotch.action('close-settings');
-});
+el.close.addEventListener('click', () => { saveORKey(true); window.codenotch.action('close-settings'); });
 
-// Esc closes the settings window.
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     saveORKey(true);
