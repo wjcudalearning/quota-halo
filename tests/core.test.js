@@ -120,3 +120,61 @@ test('normalize fills a uniform snapshot shape', () => {
   assert.ok(Array.isArray(n.windows));
   assert.equal(n.fidelity, 'official');
 });
+
+// ---- YAML parser robustness (P2 114) ----
+test('parseCredentialsYaml: comments, inline comments, quoted spaces, empty', () => {
+  const yaml = [
+    '# a comment line',
+    '',
+    'A_KEY: sk-plain',
+    'B_KEY: sk-with-#-inside # trailing',
+    "C_KEY: 'value with # and spaces'",
+    'D_KEY: ""',
+    'E_KEY: null',
+    '  F_KEY: indented value # note',
+  ].join('\n');
+  const p = credentials.parseCredentialsYaml(yaml);
+  assert.equal(p.A_KEY, 'sk-plain');
+  assert.equal(p.B_KEY, 'sk-with-#-inside');
+  assert.equal(p.C_KEY, 'value with # and spaces');
+  assert.equal(p.D_KEY, undefined); // empty → omitted
+  assert.equal(p.E_KEY, undefined); // null → omitted
+  assert.equal(p.F_KEY, 'indented value');
+});
+
+// ---- parser contract tests against fixtures (P2 117) ----
+const fs = require('node:fs');
+const path = require('node:path');
+const FIX = (n) => JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', n), 'utf8'));
+
+test('openrouter parseCredits matches credits fixture', () => {
+  const c = openrouter.parseCredits(FIX('openrouter-credits.json'));
+  assert.equal(c.total, 40);
+  assert.ok(Math.abs(c.used - 20.6338) < 0.001);
+  assert.ok(Math.abs(c.remaining - 19.3662) < 0.001);
+  assert.equal(c.free, false);
+});
+
+test('openrouter parseAuthKey matches auth-key fixture (limit null, no cap)', () => {
+  const a = openrouter.parseAuthKey(FIX('openrouter-authkey.json'));
+  assert.equal(a.limit, null);
+  assert.equal(a.remaining, null);
+  assert.equal(a.free, false);
+});
+
+test('codex windows from wham fixture invert to used', () => {
+  const w = FIX('codex-wham.json');
+  const used = codex.usedFromRemaining(w.rate_limit.primary_window.used_percent);
+  assert.equal(used, 1); // 0 remaining → 100% used
+  const weekly = codex.usedFromRemaining(w.rate_limit.secondary_window.used_percent);
+  assert.ok(Math.abs(weekly - 0.28) < 0.001);
+  assert.equal(codex.windowLabel(w.rate_limit.primary_window.limit_window_seconds, 'primary'), '5h limit');
+  assert.equal(codex.windowLabel(w.rate_limit.secondary_window.limit_window_seconds, 'secondary'), 'Weekly limit');
+});
+
+// ---- wincred error/timeout behaviour (P2 120) ----
+test('wincred: a missing credential resolves null without hanging', async () => {
+  const { readCredentialManager } = require('../src/providers/wincred');
+  const value = await readCredentialManager('codenotch-no-such-credential-xyz');
+  assert.equal(value, null);
+});

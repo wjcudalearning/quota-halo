@@ -18,15 +18,33 @@ const DEFAULTS = {
   keyName: 'DEEPSEEK_API_KEY',
 };
 
+// Strip an inline YAML comment (` # …`) but respect quoted strings, so a
+// value like `sk-abc # note` keeps `sk-abc` while `'a # b'` stays intact.
+function stripInlineComment(raw) {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === "'" && !inDouble) inSingle = !inSingle;
+    else if (ch === '"' && !inSingle) inDouble = !inDouble;
+    else if (ch === '#' && !inSingle && !inDouble && (i === 0 || /\s/.test(raw[i - 1]))) {
+      return raw.slice(0, i);
+    }
+  }
+  return raw;
+}
+
 function parseCredentialsYaml(text) {
   const out = {};
-  // Very small YAML subset: `key: value` pairs at any indent, plain or quoted.
-  // Matches DSH's own .credentials.yaml which is exactly this shape.
+  // Very small YAML subset: `key: value` pairs at any indent, plain or quoted,
+  // with comment / quoted-value handling. Matches DSH's own .credentials.yaml.
   for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
     const m = line.match(/^\s*([A-Za-z0-9_.-]+)\s*:\s*(.*)$/);
     if (!m) continue;
     const key = m[1];
-    let val = m[2].trim();
+    let val = stripInlineComment(m[2]).trim();
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
     }

@@ -60,19 +60,36 @@ function run(target) {
       { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }
     );
     let out = '';
+    let done = false;
+    let timer = null;
+    const settle = (value, ok) => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      if (!ok) console.warn(`[wincred] CredRead for "${target}" failed`);
+      resolve(value);
+    };
     child.stdout.on('data', (d) => (out += d));
-    child.on('error', () => resolve(null));
-    child.on('close', (code) => {
-      if (code !== 0) return resolve(null);
-      const value = out.replace(/^\uFEFF/, '').trim();
-      resolve(value === '__NOTFOUND__' || !value ? null : value);
+    child.on('error', (err) => {
+      console.warn('[wincred] powershell spawn failed:', err && err.message);
+      settle(null, false);
     });
-    setTimeout(() => {
+    child.on('close', (code) => {
+      if (code !== 0) {
+        console.warn(`[wincred] CredRead for "${target}" exited ${code}`);
+        return settle(null, false);
+      }
+      const value = out.replace(/^\uFEFF/, '').trim();
+      settle(value === '__NOTFOUND__' || !value ? null : value, true);
+    });
+    timer = setTimeout(() => {
+      console.warn(`[wincred] CredRead for "${target}" timed out after 15s`);
       try {
         child.kill();
       } catch {
         /* gone */
       }
+      settle(null, false);
     }, 15000);
   });
 }

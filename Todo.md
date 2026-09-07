@@ -111,13 +111,13 @@
 
 - [ ] 將 OpenRouter API key 從明文 JSON settings 移到 Windows Credential Manager 或 DPAPI；設定檔只保存是否已設定與非敏感 metadata。
 - [ ] 憑證檔案顯示使用 `%USERPROFILE%`／Windows path，並處理 `DSH_HOME`、不同使用者帳號與檔案權限錯誤。
-- [ ] YAML parser 目前只是小型 `key: value` subset；改用已驗證的 parser 或補齊 comment、quoted value、特殊字元與 multiline 的測試。
+- [x] YAML parser 目前只是小型 `key: value` subset；改用已驗證的 parser 或補齊 comment、quoted value、特殊字元與 multiline 的測試。
 - [ ] Antigravity transcript 不要每次把整個 `transcript.jsonl` 讀入記憶體；以檔案 offset、mtime cache 或 tail scan 降低輪詢成本。
 - [ ] `activity.js` 目前每 10 秒遞迴掃描 sessions；加入 mtime cache／watcher，避免 session 數量增加後拖慢主程序。
-- [ ] 為各 provider 保存 response fixtures 與 parser contract tests；私有 endpoint 變更時要能快速知道是哪個 parser 失效。
-- [ ] 顯示 provider source／fidelity 及 API 最後回應時間，讓使用者知道數字是官方值、推導值還是本機計數。
+- [x] 為各 provider 保存 response fixtures 與 parser contract tests；私有 endpoint 變更時要能快速知道是哪個 parser 失效。
+- [x] 顯示 provider source／fidelity 及 API 最後回應時間，讓使用者知道數字是官方值、推導值還是本機計數。
 - [x] 整理或移除未使用的 `src/balance.js`，避免 legacy DeepSeek 流程與現在的 `src/providers/deepseek.js` 造成維護混淆。
-- [ ] 對 `wincred.js`、PowerShell P/Invoke 與 language server discovery 增加錯誤日誌、版本相容性檢查與 timeout 測試。
+- [x] 對 `wincred.js`、PowerShell P/Invoke 與 language server discovery 增加錯誤日誌、版本相容性檢查與 timeout 測試。
 
 ## P2 — 測試、品質與維護
 

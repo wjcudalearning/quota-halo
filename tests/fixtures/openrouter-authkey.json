@@ -1,0 +1,18 @@
+{
+  "data": {
+    "label": "sk-or-v1-test",
+    "is_management_key": false,
+    "is_provisioning_key": false,
+    "limit": null,
+    "limit_reset": null,
+    "limit_remaining": null,
+    "include_byok_in_limit": false,
+    "usage": 0,
+    "usage_daily": 0,
+    "usage_weekly": 0,
+    "usage_monthly": 0,
+    "is_free_tier": false,
+    "expires_at": null,
+    "rate_limit": { "requests": -1, "interval": "10s" }
+  }
+}
