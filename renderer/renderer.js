@@ -180,7 +180,11 @@ function renderCell(p) {
   cell.dataset.state = p.state !== 'ok' ? p.state : (p.level || 'ok');
   const arc = cell.querySelector('.ring-arc');
   const color = stateColor(p);
-  const disp = p.stale && p.staleOf ? p.staleOf : p;
+  // Only show a stale "last good" if it is recent; an old stale value can be
+  // misleading (e.g. a past balance shown as if current).
+  const staleFresh = p.stale && p.staleOf && p.staleOf.updatedAt &&
+    (Date.now() - Date.parse(p.staleOf.updatedAt)) < 30 * 60 * 1000;
+  const disp = staleFresh ? p.staleOf : p;
 
   // 每一格自己帶顏色（舊版設在 #notch 上，會讓五個環全部變成最後一個
   // provider 的顏色）
