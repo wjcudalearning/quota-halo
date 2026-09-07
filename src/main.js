@@ -266,6 +266,9 @@ async function runPoll() {
   pollInFlight = (async () => {
     try {
       dbg('runPoll start');
+      // Re-read settings from disk each poll so a key/option saved externally
+      // (or while the app was already running) takes effect immediately.
+      reloadSettings();
       const fetchSettings = { ...settings, openrouterApiKey: decryptOpenRouterKey() };
       const results = process.env.CODENOTCH_FIXTURE
         ? fixtureProviders()
